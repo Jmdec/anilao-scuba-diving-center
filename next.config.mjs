@@ -1,15 +1,13 @@
 import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
     unoptimized: true,
   },
+  turbopack: {},
 };
 
 export default withPWA({
@@ -19,5 +17,5 @@ export default withPWA({
   workboxOptions: {
     disableDevLogs: true,
   },
-  // disable: process.env.NODE_ENV === "development", // Uncomment to disable PWA in development
+  // disable: process.env.NODE_ENV === "development",
 })(nextConfig);
