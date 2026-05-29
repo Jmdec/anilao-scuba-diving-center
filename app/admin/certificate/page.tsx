@@ -1,14 +1,26 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -17,222 +29,259 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/toast"
-import { Plus, Edit, Trash2, Search, Upload, ImageIcon } from "lucide-react"
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/toast";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Upload,
+  ImageIcon,
+  AlertTriangle,
+} from "lucide-react";
 
 interface Certificate {
-  id: number
-  name: string
-  level: string
-  description: string
-  prerequisites: string[]
-  duration_days: number
-  price: number
-  min_age: number
-  max_depth: number
-  image?: string
-  created_at?: string
-  updated_at?: string
+  id: number;
+  name: string;
+  level: string;
+  description: string;
+  prerequisites: string[];
+  duration_days: number;
+  price: number;
+  min_age: number;
+  max_depth: number;
+  image?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function CertificatePage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [certificateToDelete, setCertificateToDelete] =
+    useState<Certificate | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editingCertificate, setEditingCertificate] =
+    useState<Certificate | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCertificates()
-  }, [])
+    fetchCertificates();
+  }, []);
 
   const fetchCertificates = async () => {
     try {
-      const response = await fetch("/api/certificate")
+      const response = await fetch("/api/certificate");
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
-          setCertificates(data.certifications || [])
+          setCertificates(data.certifications || []);
         }
       }
     } catch (error) {
-      console.error("Error fetching certificates:", error)
+      console.error("Error fetching certificates:", error);
       toast({
         title: "Error",
         description: "Failed to load certificates",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleCreateCertificate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setUploading(true)
+    e.preventDefault();
+    setUploading(true);
 
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append("name", formData.name)
-      formDataToSend.append("level", formData.level)
-      formDataToSend.append("description", formData.description)
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("level", formData.level);
+      formDataToSend.append("description", formData.description);
 
       const prerequisitesArray = formData.prerequisites
         .split(",")
         .map((p) => p.trim())
-        .filter((p) => p)
+        .filter((p) => p);
 
       prerequisitesArray.forEach((prerequisite, index) => {
-        formDataToSend.append(`prerequisites[${index}]`, prerequisite)
-      })
+        formDataToSend.append(`prerequisites[${index}]`, prerequisite);
+      });
 
-      formDataToSend.append("duration_days", formData.duration_days)
-      formDataToSend.append("price", formData.price)
-      formDataToSend.append("min_age", formData.min_age)
-      formDataToSend.append("max_depth", formData.max_depth)
+      formDataToSend.append("duration_days", formData.duration_days);
+      formDataToSend.append("price", formData.price);
+      formDataToSend.append("min_age", formData.min_age);
+      formDataToSend.append("max_depth", formData.max_depth);
 
       if (selectedImage) {
-        formDataToSend.append("image", selectedImage)
+        formDataToSend.append("image", selectedImage);
       }
 
       const response = await fetch("/api/certificate", {
         method: "POST",
         body: formDataToSend,
-      })
+      });
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
           toast({
             title: "Success",
             description: "Certificate created successfully",
-          })
-          setIsCreateDialogOpen(false)
-          resetForm()
-          fetchCertificates()
+          });
+          setIsCreateDialogOpen(false);
+          resetForm();
+          fetchCertificates();
         }
       } else {
-        throw new Error("Failed to create certificate")
+        throw new Error("Failed to create certificate");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create certificate",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   const handleEditCertificate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingCertificate) return
+    e.preventDefault();
+    if (!editingCertificate) return;
 
-    setUploading(true)
+    setUploading(true);
 
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append("name", formData.name)
-      formDataToSend.append("level", formData.level)
-      formDataToSend.append("description", formData.description)
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("level", formData.level);
+      formDataToSend.append("description", formData.description);
 
       const prerequisitesArray = formData.prerequisites
         .split(",")
         .map((p) => p.trim())
-        .filter((p) => p)
+        .filter((p) => p);
 
       prerequisitesArray.forEach((prerequisite, index) => {
-        formDataToSend.append(`prerequisites[${index}]`, prerequisite)
-      })
+        formDataToSend.append(`prerequisites[${index}]`, prerequisite);
+      });
 
-      formDataToSend.append("duration_days", formData.duration_days)
-      formDataToSend.append("price", formData.price)
-      formDataToSend.append("min_age", formData.min_age)
-      formDataToSend.append("max_depth", formData.max_depth)
+      formDataToSend.append("duration_days", formData.duration_days);
+      formDataToSend.append("price", formData.price);
+      formDataToSend.append("min_age", formData.min_age);
+      formDataToSend.append("max_depth", formData.max_depth);
 
       if (selectedImage) {
-        formDataToSend.append("image", selectedImage)
+        formDataToSend.append("image", selectedImage);
       }
 
-      const response = await fetch(`/api/certificate/${editingCertificate.id}`, {
-        method: "PUT",
-        body: formDataToSend,
-      })
+      const response = await fetch(
+        `/api/certificate/${editingCertificate.id}`,
+        {
+          method: "PUT",
+          body: formDataToSend,
+        },
+      );
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
           toast({
             title: "Success",
             description: "Certificate updated successfully",
-          })
-          setIsEditDialogOpen(false)
-          setEditingCertificate(null)
-          resetForm()
-          fetchCertificates()
+          });
+          setIsEditDialogOpen(false);
+          setEditingCertificate(null);
+          resetForm();
+          fetchCertificates();
         }
       } else {
-        throw new Error("Failed to update certificate")
+        throw new Error("Failed to update certificate");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update certificate",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
-  const handleDeleteCertificate = async (certificateId: number) => {
-    if (!confirm("Are you sure you want to delete this certificate?")) return
+  const openDeleteDialog = (certificate: Certificate) => {
+    setCertificateToDelete(certificate);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCertificate = async () => {
+    if (!certificateToDelete) return;
+
+    setIsDeleting(true);
 
     try {
-      const response = await fetch(`/api/certificate/${certificateId}`, {
-        method: "DELETE",
-      })
+      const response = await fetch(
+        `/api/certificate/${certificateToDelete.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
           toast({
             title: "Success",
-            description: "Certificate deleted successfully",
-          })
-          fetchCertificates()
+            description: `"${certificateToDelete.name}" has been deleted`,
+          });
+          setIsDeleteDialogOpen(false);
+          setCertificateToDelete(null);
+          fetchCertificates();
         }
       } else {
-        throw new Error("Failed to delete certificate")
+        throw new Error("Failed to delete certificate");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete certificate",
         variant: "destructive",
-      })
+      });
+    } finally {
+      setIsDeleting(false);
     }
-  }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file)
-      const reader = new FileReader()
+      setSelectedImage(file);
+      const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -244,13 +293,13 @@ export default function CertificatePage() {
       price: "",
       min_age: "",
       max_depth: "",
-    })
-    setSelectedImage(null)
-    setImagePreview(null)
-  }
+    });
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
 
   const openEditDialog = (certificate: Certificate) => {
-    setEditingCertificate(certificate)
+    setEditingCertificate(certificate);
     setFormData({
       name: certificate.name,
       level: certificate.level,
@@ -262,34 +311,36 @@ export default function CertificatePage() {
       price: certificate.price.toString(),
       min_age: certificate.min_age.toString(),
       max_depth: certificate.max_depth.toString(),
-    })
+    });
     setImagePreview(
-      certificate.image ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}/${certificate.image}` : null,
-    )
-    setSelectedImage(null)
-    setIsEditDialogOpen(true)
-  }
+      certificate.image
+        ? `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}/${certificate.image}`
+        : null,
+    );
+    setSelectedImage(null);
+    setIsEditDialogOpen(true);
+  };
 
   const filteredCertificates = certificates.filter(
     (certificate) =>
       certificate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       certificate.level.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  );
 
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Beginner":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "Intermediate":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "Advanced":
-        return "bg-orange-100 text-orange-800"
+        return "bg-orange-100 text-orange-800";
       case "Professional":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -300,14 +351,18 @@ export default function CertificatePage() {
     price: "",
     min_age: "",
     max_depth: "",
-  })
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-cyan-900">Certificate Management</h2>
-          <p className="text-cyan-600">Manage diving certifications and requirements</p>
+          <h2 className="text-2xl font-bold text-cyan-900">
+            Certificate Management
+          </h2>
+          <p className="text-cyan-600">
+            Manage diving certifications and requirements
+          </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -319,13 +374,21 @@ export default function CertificatePage() {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Certificate</DialogTitle>
-              <DialogDescription>Add a new diving certification to the system</DialogDescription>
+              <DialogDescription>
+                Add a new diving certification to the system
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateCertificate} className="space-y-4">
               <div>
                 <Label htmlFor="image">Certificate Image</Label>
                 <div className="mt-2">
-                  <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="mb-2" />
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="mb-2"
+                  />
                   {imagePreview && (
                     <div className="mt-2">
                       <img
@@ -343,14 +406,21 @@ export default function CertificatePage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="e.g., Open Water Diver"
                     required
                   />
                 </div>
                 <div>
                   <Label htmlFor="level">Level</Label>
-                  <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
+                  <Select
+                    value={formData.level}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, level: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
@@ -369,7 +439,9 @@ export default function CertificatePage() {
                     type="number"
                     step="0.01"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: e.target.value })
+                    }
                     placeholder="350.00"
                     required
                   />
@@ -380,7 +452,12 @@ export default function CertificatePage() {
                     id="duration"
                     type="number"
                     value={formData.duration_days}
-                    onChange={(e) => setFormData({ ...formData, duration_days: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        duration_days: e.target.value,
+                      })
+                    }
                     placeholder="3"
                     required
                   />
@@ -391,7 +468,9 @@ export default function CertificatePage() {
                     id="min_age"
                     type="number"
                     value={formData.min_age}
-                    onChange={(e) => setFormData({ ...formData, min_age: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, min_age: e.target.value })
+                    }
                     placeholder="12"
                     required
                   />
@@ -402,7 +481,9 @@ export default function CertificatePage() {
                     id="max_depth"
                     type="number"
                     value={formData.max_depth}
-                    onChange={(e) => setFormData({ ...formData, max_depth: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_depth: e.target.value })
+                    }
                     placeholder="18"
                     required
                   />
@@ -413,26 +494,40 @@ export default function CertificatePage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Certificate description..."
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="prerequisites">Prerequisites (comma-separated)</Label>
+                <Label htmlFor="prerequisites">
+                  Prerequisites (comma-separated)
+                </Label>
                 <Textarea
                   id="prerequisites"
                   value={formData.prerequisites}
-                  onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, prerequisites: e.target.value })
+                  }
                   placeholder="Swimming ability, Medical clearance, Basic water confidence"
                   rows={2}
                 />
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700" disabled={uploading}>
+                <Button
+                  type="submit"
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                  disabled={uploading}
+                >
                   {uploading ? (
                     <>
                       <Upload className="w-4 h-4 mr-2 animate-spin" />
@@ -454,7 +549,8 @@ export default function CertificatePage() {
             <div>
               <CardTitle>Certificates</CardTitle>
               <CardDescription>
-                {filteredCertificates.length} certificate{filteredCertificates.length !== 1 ? "s" : ""} found
+                {filteredCertificates.length} certificate
+                {filteredCertificates.length !== 1 ? "s" : ""} found
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-auto">
@@ -512,9 +608,13 @@ export default function CertificatePage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">{certificate.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {certificate.name}
+                      </TableCell>
                       <TableCell>
-                        <Badge className={getLevelColor(certificate.level)}>{certificate.level}</Badge>
+                        <Badge className={getLevelColor(certificate.level)}>
+                          {certificate.level}
+                        </Badge>
                       </TableCell>
                       <TableCell>₱{certificate.price}</TableCell>
                       <TableCell>{certificate.duration_days} days</TableCell>
@@ -522,14 +622,18 @@ export default function CertificatePage() {
                       <TableCell>{certificate.max_depth}m</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(certificate)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(certificate)}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteCertificate(certificate.id)}
-                            className="text-red-600 hover:text-red-700"
+                            onClick={() => openDeleteDialog(certificate)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -544,17 +648,26 @@ export default function CertificatePage() {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Certificate</DialogTitle>
-            <DialogDescription>Update certificate information</DialogDescription>
+            <DialogDescription>
+              Update certificate information
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditCertificate} className="space-y-4">
             <div>
               <Label htmlFor="edit-image">Certificate Image</Label>
               <div className="mt-2">
-                <Input id="edit-image" type="file" accept="image/*" onChange={handleImageChange} className="mb-2" />
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="mb-2"
+                />
                 {imagePreview && (
                   <div className="mt-2">
                     <img
@@ -572,13 +685,20 @@ export default function CertificatePage() {
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="edit-level">Level</Label>
-                <Select value={formData.level} onValueChange={(value) => setFormData({ ...formData, level: value })}>
+                <Select
+                  value={formData.level}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, level: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
@@ -597,7 +717,9 @@ export default function CertificatePage() {
                   type="number"
                   step="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -607,7 +729,9 @@ export default function CertificatePage() {
                   id="edit-duration"
                   type="number"
                   value={formData.duration_days}
-                  onChange={(e) => setFormData({ ...formData, duration_days: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duration_days: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -617,7 +741,9 @@ export default function CertificatePage() {
                   id="edit-min_age"
                   type="number"
                   value={formData.min_age}
-                  onChange={(e) => setFormData({ ...formData, min_age: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, min_age: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -627,7 +753,9 @@ export default function CertificatePage() {
                   id="edit-max_depth"
                   type="number"
                   value={formData.max_depth}
-                  onChange={(e) => setFormData({ ...formData, max_depth: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, max_depth: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -637,24 +765,38 @@ export default function CertificatePage() {
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 rows={3}
               />
             </div>
             <div>
-              <Label htmlFor="edit-prerequisites">Prerequisites (comma-separated)</Label>
+              <Label htmlFor="edit-prerequisites">
+                Prerequisites (comma-separated)
+              </Label>
               <Textarea
                 id="edit-prerequisites"
                 value={formData.prerequisites}
-                onChange={(e) => setFormData({ ...formData, prerequisites: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, prerequisites: e.target.value })
+                }
                 rows={2}
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700" disabled={uploading}>
+              <Button
+                type="submit"
+                className="bg-cyan-600 hover:bg-cyan-700"
+                disabled={uploading}
+              >
                 {uploading ? (
                   <>
                     <Upload className="w-4 h-4 mr-2 animate-spin" />
@@ -668,6 +810,80 @@ export default function CertificatePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle>Delete Certificate</DialogTitle>
+                <DialogDescription className="mt-0.5">
+                  This action cannot be undone.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-2">
+            {certificateToDelete && (
+              <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+                <p className="text-sm text-red-800">
+                  You are about to permanently delete{" "}
+                  <span className="font-semibold">
+                    "{certificateToDelete.name}"
+                  </span>{" "}
+                  <Badge
+                    className={`ml-1 text-xs ${getLevelColor(certificateToDelete.level)}`}
+                  >
+                    {certificateToDelete.level}
+                  </Badge>
+                </p>
+                <p className="mt-1 text-xs text-red-600">
+                  This will remove the certificate and all associated data from
+                  the system.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setCertificateToDelete(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteCertificate}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2 animate-pulse" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Certificate
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

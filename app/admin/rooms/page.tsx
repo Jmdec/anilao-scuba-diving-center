@@ -1,14 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -17,216 +28,199 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/toast"
-import { Plus, Edit, Trash2, Search, Upload, X } from "lucide-react"
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/toast";
+import { Plus, Edit, Trash2, Search, Upload, X, Loader2 } from "lucide-react";
 
 interface Room {
-  id: number
-  name: string
-  type: string
-  price_per_night: number
-  max_guests: number
-  description: string
-  amenities: string[]
-  image_url?: string
-  is_available: boolean
-  created_at?: string
-  updated_at?: string
+  id: number;
+  name: string;
+  type: string;
+  price_per_night: number;
+  max_guests: number;
+  description: string;
+  amenities: string[];
+  image_url?: string;
+  is_available: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const getImageUrl = (imagePath: string | undefined) => {
-  if (!imagePath) return "/placeholder.svg"
-
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith("http")) return imagePath
-
-  // If it's a relative path, prepend the backend URL
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || ""
-  return `${backendUrl}${imagePath}`
-}
+  if (!imagePath) return "/placeholder.svg";
+  if (imagePath.startsWith("http")) return imagePath;
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "";
+  return `${backendUrl}${imagePath}`;
+};
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string>("")
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "",
+    price_per_night: "",
+    max_guests: "",
+    description: "",
+    amenities: "",
+    image_url: "",
+    is_available: true,
+  });
 
   useEffect(() => {
-    fetchRooms()
-  }, [])
+    fetchRooms();
+  }, []);
 
   const fetchRooms = async () => {
     try {
-      const response = await fetch("/api/rooms")
+      const response = await fetch("/api/rooms");
       if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setRooms(data.rooms || [])
-        }
+        const data = await response.json();
+        if (data.success) setRooms(data.rooms || []);
       }
     } catch (error) {
-      console.error("Error fetching rooms:", error)
+      console.error("Error fetching rooms:", error);
       toast({
         title: "Error",
         description: "Failed to load rooms",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const buildFormData = () => {
+    const submitData = new FormData();
+    submitData.append("name", formData.name);
+    submitData.append("type", formData.type);
+    submitData.append("description", formData.description);
+    submitData.append("price_per_night", formData.price_per_night);
+    submitData.append("max_guests", formData.max_guests);
+    submitData.append("is_available", formData.is_available.toString());
+
+    const amenitiesArray = formData.amenities
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => a);
+    amenitiesArray.forEach((amenity, index) =>
+      submitData.append(`amenities[${index}]`, amenity),
+    );
+
+    if (selectedFile) submitData.append("image", selectedFile);
+    return submitData;
+  };
 
   const handleCreateRoom = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setUploading(true)
-
+    e.preventDefault();
+    setUploading(true);
     try {
-      const submitData = new FormData()
-      submitData.append("name", formData.name)
-      submitData.append("type", formData.type)
-      submitData.append("description", formData.description)
-      submitData.append("price_per_night", formData.price_per_night)
-      submitData.append("max_guests", formData.max_guests)
-      submitData.append("is_available", formData.is_available.toString())
-
-      const amenitiesArray = formData.amenities
-        .split(",")
-        .map((a) => a.trim())
-        .filter((a) => a)
-
-      amenitiesArray.forEach((amenity, index) => {
-        submitData.append(`amenities[${index}]`, amenity)
-      })
-
-      if (selectedFile) {
-        submitData.append("image", selectedFile)
-      }
-
       const response = await fetch("/api/rooms", {
         method: "POST",
-        body: submitData,
-      })
-
+        body: buildFormData(),
+      });
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
-          toast({
-            title: "Success",
-            description: "Room created successfully",
-          })
-          setIsCreateDialogOpen(false)
-          resetForm()
-          fetchRooms()
+          toast({ title: "Success", description: "Room created successfully" });
+          setIsCreateDialogOpen(false);
+          resetForm();
+          fetchRooms();
         }
       } else {
-        throw new Error("Failed to create room")
+        throw new Error("Failed to create room");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create room",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   const handleEditRoom = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingRoom) return
-
-    setUploading(true)
-
+    e.preventDefault();
+    if (!editingRoom) return;
+    setUploading(true);
     try {
-      const submitData = new FormData()
-      submitData.append("name", formData.name)
-      submitData.append("type", formData.type)
-      submitData.append("description", formData.description)
-      submitData.append("price_per_night", formData.price_per_night)
-      submitData.append("max_guests", formData.max_guests)
-      submitData.append("is_available", formData.is_available.toString())
-
-      const amenitiesArray = formData.amenities
-        .split(",")
-        .map((a) => a.trim())
-        .filter((a) => a)
-
-      amenitiesArray.forEach((amenity, index) => {
-        submitData.append(`amenities[${index}]`, amenity)
-      })
-
-      if (selectedFile) {
-        submitData.append("image", selectedFile)
-      }
-
       const response = await fetch(`/api/rooms/${editingRoom.id}`, {
         method: "PUT",
-        body: submitData,
-      })
-
+        body: buildFormData(),
+      });
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
-          toast({
-            title: "Success",
-            description: "Room updated successfully",
-          })
-          setIsEditDialogOpen(false)
-          setEditingRoom(null)
-          resetForm()
-          fetchRooms()
+          toast({ title: "Success", description: "Room updated successfully" });
+          setIsEditDialogOpen(false);
+          setEditingRoom(null);
+          resetForm();
+          fetchRooms();
         }
       } else {
-        throw new Error("Failed to update room")
+        throw new Error("Failed to update room");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update room",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
-  const handleDeleteRoom = async (roomId: number) => {
-    if (!confirm("Are you sure you want to delete this room?")) return
-
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/rooms/${roomId}`, {
+      const response = await fetch(`/api/rooms/${roomToDelete.id}`, {
         method: "DELETE",
-      })
-
+      });
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
-          toast({
-            title: "Success",
-            description: "Room deleted successfully",
-          })
-          fetchRooms()
+          toast({ title: "Success", description: "Room deleted successfully" });
+          setRooms((prev) => prev.filter((r) => r.id !== roomToDelete.id));
         }
       } else {
-        throw new Error("Failed to delete room")
+        throw new Error("Failed to delete room");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete room",
         variant: "destructive",
-      })
+      });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setRoomToDelete(null);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -238,206 +232,235 @@ export default function RoomsPage() {
       amenities: "",
       image_url: "",
       is_available: true,
-    })
-    setSelectedFile(null)
-    setPreviewUrl("")
-  }
+    });
+    setSelectedFile(null);
+    setPreviewUrl("");
+  };
 
   const openEditDialog = (room: Room) => {
-    setEditingRoom(room)
+    setEditingRoom(room);
     setFormData({
       name: room.name,
       type: room.type,
       price_per_night: room.price_per_night.toString(),
       max_guests: room.max_guests.toString(),
       description: room.description,
-      amenities: Array.isArray(room.amenities) ? room.amenities.join(", ") : room.amenities || "",
+      amenities: Array.isArray(room.amenities)
+        ? room.amenities.join(", ")
+        : room.amenities || "",
       image_url: room.image_url || "",
       is_available: room.is_available,
-    })
-    setSelectedFile(null)
-    setPreviewUrl(getImageUrl(room.image_url))
-    setIsEditDialogOpen(true)
-  }
+    });
+    setSelectedFile(null);
+    setPreviewUrl(getImageUrl(room.image_url));
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (room: Room) => {
+    setRoomToDelete(room);
+    setIsDeleteDialogOpen(true);
+  };
 
   const clearImage = () => {
-    setSelectedFile(null)
-    setPreviewUrl("")
-    setFormData({ ...formData, image_url: "" })
-  }
+    setSelectedFile(null);
+    setPreviewUrl("");
+    setFormData({ ...formData, image_url: "" });
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
     }
-  }
+  };
 
   const filteredRooms = rooms.filter(
     (room) =>
       room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.type.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  );
 
-  const getStatusColor = (isAvailable: boolean) => {
-    return isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-  }
-
-  const getStatusText = (isAvailable: boolean) => {
-    return isAvailable ? "Available" : "Unavailable"
-  }
-
-  const [formData, setFormData] = useState({
-    name: "",
-    type: "",
-    price_per_night: "",
-    max_guests: "",
-    description: "",
-    amenities: "",
-    image_url: "",
-    is_available: true,
-  })
+  const roomForm = (
+    onSubmit: (e: React.FormEvent) => void,
+    submitLabel: string,
+  ) => (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label>Room Name</Label>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g., Deluxe Ocean View"
+            required
+          />
+        </div>
+        <div>
+          <Label>Room Type</Label>
+          <Input
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            placeholder="e.g., Deluxe"
+            required
+          />
+        </div>
+        <div>
+          <Label>Price per Night ($)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.price_per_night}
+            onChange={(e) =>
+              setFormData({ ...formData, price_per_night: e.target.value })
+            }
+            placeholder="150.00"
+            required
+          />
+        </div>
+        <div>
+          <Label>Max Guests</Label>
+          <Input
+            type="number"
+            value={formData.max_guests}
+            onChange={(e) =>
+              setFormData({ ...formData, max_guests: e.target.value })
+            }
+            placeholder="2"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Availability</Label>
+        <Select
+          value={formData.is_available.toString()}
+          onValueChange={(value) =>
+            setFormData({ ...formData, is_available: value === "true" })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select availability" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Available</SelectItem>
+            <SelectItem value="false">Unavailable</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Description</Label>
+        <Textarea
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          placeholder="Room description..."
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label>Amenities (comma-separated)</Label>
+        <Textarea
+          value={formData.amenities}
+          onChange={(e) =>
+            setFormData({ ...formData, amenities: e.target.value })
+          }
+          placeholder="Air conditioning, WiFi, Ocean view, Mini bar"
+          rows={2}
+        />
+      </div>
+      <div>
+        <Label>Room Image</Label>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="flex-1"
+            />
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearImage}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+          {previewUrl && (
+            <div className="relative w-full h-32 border rounded-lg overflow-hidden">
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setIsCreateDialogOpen(false);
+            setIsEditDialogOpen(false);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="bg-cyan-600 hover:bg-cyan-700"
+          disabled={uploading}
+        >
+          {uploading ? (
+            <>
+              <Upload className="w-4 h-4 mr-2 animate-spin" />
+              {submitLabel === "Create Room" ? "Creating..." : "Updating..."}
+            </>
+          ) : (
+            submitLabel
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-cyan-900">Room Management</h2>
-          <p className="text-cyan-600">Manage accommodation rooms and availability</p>
+          <p className="text-cyan-600">
+            Manage accommodation rooms and availability
+          </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog
+          open={isCreateDialogOpen}
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) resetForm();
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="bg-cyan-600 hover:bg-cyan-700">
               <Plus className="w-4 h-4 mr-2" />
               Add Room
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Room</DialogTitle>
-              <DialogDescription>Add a new room to the accommodation system</DialogDescription>
+              <DialogDescription>
+                Add a new room to the accommodation system
+              </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateRoom} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Room Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Deluxe Ocean View"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type">Room Type</Label>
-                  <Input
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    placeholder="e.g., Deluxe"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="price">Price per Night ($)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_night}
-                    onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                    placeholder="150.00"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="capacity">Max Guests</Label>
-                  <Input
-                    id="capacity"
-                    type="number"
-                    value={formData.max_guests}
-                    onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })}
-                    placeholder="2"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="status">Availability</Label>
-                <Select
-                  value={formData.is_available.toString()}
-                  onValueChange={(value) => setFormData({ ...formData, is_available: value === "true" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select availability" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Available</SelectItem>
-                    <SelectItem value="false">Unavailable</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Room description..."
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="amenities">Amenities (comma-separated)</Label>
-                <Textarea
-                  id="amenities"
-                  value={formData.amenities}
-                  onChange={(e) => setFormData({ ...formData, amenities: e.target.value })}
-                  placeholder="Air conditioning, WiFi, Ocean view, Mini bar"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="image">Room Image</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input id="image" type="file" accept="image/*" onChange={handleFileSelect} className="flex-1" />
-                    {previewUrl && (
-                      <Button type="button" variant="outline" size="sm" onClick={clearImage}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {previewUrl && (
-                    <div className="relative w-full h-32 border rounded-lg overflow-hidden">
-                      <img
-                        src={previewUrl || "/placeholder.svg"}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700" disabled={uploading}>
-                  {uploading ? (
-                    <>
-                      <Upload className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Room"
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
+            {roomForm(handleCreateRoom, "Create Room")}
           </DialogContent>
         </Dialog>
       </div>
@@ -448,7 +471,8 @@ export default function RoomsPage() {
             <div>
               <CardTitle>Rooms</CardTitle>
               <CardDescription>
-                {filteredRooms.length} room{filteredRooms.length !== 1 ? "s" : ""} found
+                {filteredRooms.length} room
+                {filteredRooms.length !== 1 ? "s" : ""} found
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-auto">
@@ -496,18 +520,32 @@ export default function RoomsPage() {
                       <TableCell>${room.price_per_night}</TableCell>
                       <TableCell>{room.max_guests} guests</TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(room.is_available)}>{getStatusText(room.is_available)}</Badge>
+                        <Badge
+                          className={
+                            room.is_available
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }
+                        >
+                          {room.is_available ? "Available" : "Unavailable"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(room)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(room)}
+                            title="Edit"
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteRoom(room.id)}
-                            className="text-red-600 hover:text-red-700"
+                            onClick={() => openDeleteDialog(room)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -522,123 +560,69 @@ export default function RoomsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+      {/* Edit Dialog */}
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Room</DialogTitle>
             <DialogDescription>Update room information</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditRoom} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-name">Room Name</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-type">Room Type</Label>
-                <Input
-                  id="edit-type"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-price">Price per Night ($)</Label>
-                <Input
-                  id="edit-price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price_per_night}
-                  onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-capacity">Max Guests</Label>
-                <Input
-                  id="edit-capacity"
-                  type="number"
-                  value={formData.max_guests}
-                  onChange={(e) => setFormData({ ...formData, max_guests: e.target.value })}
-                  required
-                />
-              </div>
+          {roomForm(handleEditRoom, "Update Room")}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <div className="flex flex-col items-center justify-center gap-4 py-2">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            <div>
-              <Label htmlFor="edit-status">Availability</Label>
-              <Select
-                value={formData.is_available.toString()}
-                onValueChange={(value) => setFormData({ ...formData, is_available: value === "true" })}
+            <DialogHeader className="items-center text-center">
+              <DialogTitle className="text-red-600">Delete Room</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-slate-700">
+                  "{roomToDelete?.name}"
+                </span>
+                ? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 w-full sm:justify-center">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setRoomToDelete(null);
+                }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select availability" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Available</SelectItem>
-                  <SelectItem value="false">Unavailable</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-amenities">Amenities (comma-separated)</Label>
-              <Textarea
-                id="edit-amenities"
-                value={formData.amenities}
-                onChange={(e) => setFormData({ ...formData, amenities: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-image">Room Image</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Input id="edit-image" type="file" accept="image/*" onChange={handleFileSelect} className="flex-1" />
-                  {previewUrl && (
-                    <Button type="button" variant="outline" size="sm" onClick={clearImage}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                {previewUrl && (
-                  <div className="relative w-full h-32 border rounded-lg overflow-hidden">
-                    <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-cyan-600 hover:bg-cyan-700" disabled={uploading}>
-                {uploading ? (
+              <Button
+                onClick={handleDeleteRoom}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
                   <>
-                    <Upload className="w-4 h-4 mr-2 animate-spin" />
-                    Updating...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
                   </>
                 ) : (
-                  "Update Room"
+                  "Delete"
                 )}
               </Button>
             </DialogFooter>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

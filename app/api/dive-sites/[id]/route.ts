@@ -5,10 +5,11 @@ const API_BASE_URL =
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/dive-sites/${params.id}`, {
+    const { id } = await params;
+    const response = await fetch(`${API_BASE_URL}/dive-sites/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -27,15 +28,11 @@ export async function GET(
     }
 
     const data = await response.json();
-
-    return NextResponse.json({
-      success: data.success,
-      diveSite: data.data,
-    });
+    return NextResponse.json({ success: data.success, diveSite: data.data });
   } catch (error) {
-    console.error("Error fetching dive site from Laravel:", error);
+    console.error("Error fetching dive site:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch dive site from backend" },
+      { success: false, error: "Failed to fetch dive site" },
       { status: 500 },
     );
   }
@@ -43,14 +40,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const formData = await request.formData();
-
     const processedFormData = new FormData();
 
-    // Add method spoofing for Laravel — this is the key fix
     processedFormData.append("_method", "PUT");
 
     for (const [key, value] of formData.entries()) {
@@ -77,28 +73,19 @@ export async function PUT(
       }
     }
 
-    // Use POST instead of PUT so FormData works with Laravel
-    const response = await fetch(`${API_BASE_URL}/dive-sites/${params.id}`, {
+    const response = await fetch(`${API_BASE_URL}/dive-sites/${id}`, {
       method: "POST",
       body: processedFormData,
-      headers: {
-        Accept: "application/json",
-      },
+      headers: { Accept: "application/json" },
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return NextResponse.json(
-          { success: false, error: "Dive site not found" },
-          { status: 404 },
-        );
-      }
       return NextResponse.json(
         {
           success: false,
-          error: data.message || "Failed to update dive site",
+          error: data.message || "Failed to update",
           errors: data.errors || {},
         },
         { status: response.status },
@@ -111,9 +98,9 @@ export async function PUT(
       message: data.message,
     });
   } catch (error) {
-    console.error("Error updating dive site via Laravel:", error);
+    console.error("Error updating dive site:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to update dive site in backend" },
+      { success: false, error: "Failed to update dive site" },
       { status: 500 },
     );
   }
@@ -121,10 +108,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const response = await fetch(`${API_BASE_URL}/dive-sites/${params.id}`, {
+    const { id } = await params;
+    const response = await fetch(`${API_BASE_URL}/dive-sites/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -135,23 +123,17 @@ export async function DELETE(
     const data = await response.json();
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return NextResponse.json(
-          { success: false, error: "Dive site not found" },
-          { status: 404 },
-        );
-      }
-      throw new Error(`Laravel API responded with status: ${response.status}`);
+      return NextResponse.json(
+        { success: false, error: data.message || "Failed to delete" },
+        { status: response.status },
+      );
     }
 
-    return NextResponse.json({
-      success: data.success,
-      message: data.message,
-    });
+    return NextResponse.json({ success: data.success, message: data.message });
   } catch (error) {
-    console.error("Error deleting dive site via Laravel:", error);
+    console.error("Error deleting dive site:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to delete dive site from backend" },
+      { success: false, error: "Failed to delete dive site" },
       { status: 500 },
     );
   }

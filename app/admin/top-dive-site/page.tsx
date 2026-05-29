@@ -1,90 +1,136 @@
-"use client"
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { toast } from "@/components/ui/toast"
-import { Toaster } from "@/components/ui/toaster"
-import { Search, Eye, Edit, Plus, Trash2, MapPin, Waves, Loader2 } from "lucide-react"
+"use client";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toaster";
+import {
+  Search,
+  Eye,
+  Edit,
+  Plus,
+  Trash2,
+  MapPin,
+  Waves,
+  Loader2,
+} from "lucide-react";
 
 interface DiveSite {
-  id: number
-  name: string
-  description: string
-  image: string
-  location: string
-  depth_min: number
-  depth_max: number
-  difficulty_level: "beginner" | "intermediate" | "advanced"
-  visibility: string
-  best_time_to_visit: string
-  marine_life: string
-  is_featured: boolean
-  is_active: boolean
-  sort_order: number
-  created_at: string
-  updated_at: string
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  location: string;
+  depth_min: number;
+  depth_max: number;
+  difficulty_level: "beginner" | "intermediate" | "advanced";
+  visibility: number;
+  best_time_to_visit: string;
+  marine_life: string;
+  is_featured: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 const difficultyOptions = [
-  { value: "beginner", label: "Beginner", color: "bg-green-100 text-green-800" },
-  { value: "intermediate", label: "Intermediate", color: "bg-yellow-100 text-yellow-800" },
+  {
+    value: "beginner",
+    label: "Beginner",
+    color: "bg-green-100 text-green-800",
+  },
+  {
+    value: "intermediate",
+    label: "Intermediate",
+    color: "bg-yellow-100 text-yellow-800",
+  },
   { value: "advanced", label: "Advanced", color: "bg-red-100 text-red-800" },
-]
+];
 
 const getDifficultyColor = (difficulty: string) => {
-  const option = difficultyOptions.find((opt) => opt.value === difficulty)
-  return option?.color || "bg-gray-100 text-gray-800"
-}
+  const option = difficultyOptions.find((opt) => opt.value === difficulty);
+  return option?.color || "bg-gray-100 text-gray-800";
+};
 
-const LARAVEL_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000"
+const LARAVEL_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
+  "http://localhost:8000";
 
 export default function AdminDiveSitesPage() {
-  const [diveSites, setDiveSites] = useState<DiveSite[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [difficultyFilter, setDifficultyFilter] = useState("all")
-  const [selectedSite, setSelectedSite] = useState<DiveSite | null>(null)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [formData, setFormData] = useState<Partial<DiveSite>>({})
+  const [diveSites, setDiveSites] = useState<DiveSite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [selectedSite, setSelectedSite] = useState<DiveSite | null>(null);
+  const [siteToDelete, setSiteToDelete] = useState<DiveSite | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState<Partial<DiveSite>>({});
 
   useEffect(() => {
-    fetchDiveSites()
-  }, [])
+    fetchDiveSites();
+  }, []);
 
   const fetchDiveSites = async () => {
     try {
-      const response = await fetch("/api/dive-sites")
+      const response = await fetch("/api/dive-sites");
       if (response.ok) {
-        const data = await response.json()
-        console.log("[v0] API Response:", data)
+        const data = await response.json();
         if (data.success) {
-          setDiveSites(data.diveSites || [])
+          setDiveSites(data.diveSites || []);
         }
       }
     } catch (error) {
-      console.error("Error fetching dive sites:", error)
+      console.error("Error fetching dive sites:", error);
       toast({
         title: "Error",
         description: "Failed to load dive sites",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSave = async () => {
     if (!formData.name || !formData.description) {
@@ -92,148 +138,157 @@ export default function AdminDiveSitesPage() {
         title: "Error",
         description: "Name and description are required",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSaving(true)
-
+    setIsSaving(true);
     try {
-      const submitData = new FormData()
-
-      // Add all form fields
+      const submitData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          submitData.append(key, value.toString())
+          submitData.append(key, value.toString());
         }
-      })
+      });
+      if (imageFile) submitData.append("image", imageFile);
 
-      // Add image file if selected
-      if (imageFile) {
-        submitData.append("image", imageFile)
-      }
+      const url = selectedSite
+        ? `/api/dive-sites/${selectedSite.id}`
+        : "/api/dive-sites";
+      const method = selectedSite ? "PUT" : "POST";
 
-      const url = selectedSite ? `/api/dive-sites/${selectedSite.id}` : "/api/dive-sites"
-      const method = selectedSite ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        body: submitData,
-      })
+      const response = await fetch(url, { method, body: submitData });
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
           toast({
             title: "Success",
-            description: selectedSite ? "Dive site updated successfully" : "Dive site created successfully",
-          })
-          setIsEditDialogOpen(false)
-          setIsAddDialogOpen(false)
-          setSelectedSite(null)
-          setFormData({})
-          setImageFile(null)
-          fetchDiveSites()
+            description: selectedSite
+              ? "Dive site updated successfully"
+              : "Dive site created successfully",
+          });
+          setIsEditDialogOpen(false);
+          setIsAddDialogOpen(false);
+          setSelectedSite(null);
+          setFormData({});
+          setImageFile(null);
+          fetchDiveSites();
         }
       } else {
-        throw new Error("Failed to save dive site")
+        throw new Error("Failed to save dive site");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to save dive site",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
-  const handleDelete = async (site: DiveSite) => {
-    if (!confirm(`Are you sure you want to delete "${site.name}"?`)) return
-
-    setIsDeleting(true)
-
+  const handleDelete = async () => {
+    if (!siteToDelete) return;
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/dive-sites/${site.id}`, {
+      const response = await fetch(`/api/dive-sites/${siteToDelete.id}`, {
         method: "DELETE",
-      })
-
+      });
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         if (data.success) {
           toast({
             title: "Success",
             description: "Dive site deleted successfully",
-          })
-          fetchDiveSites()
+          });
+          setDiveSites((prev) => prev.filter((s) => s.id !== siteToDelete.id));
         }
       } else {
-        throw new Error("Failed to delete dive site")
+        throw new Error("Failed to delete");
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete dive site",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setSiteToDelete(null);
     }
-  }
+  };
 
   const openViewDialog = (site: DiveSite) => {
-    setSelectedSite(site)
-    setIsViewDialogOpen(true)
-  }
-
+    setSelectedSite(site);
+    setIsViewDialogOpen(true);
+  };
   const openEditDialog = (site: DiveSite) => {
-    setSelectedSite(site)
-    setFormData(site)
-    setIsEditDialogOpen(true)
-  }
-
+    setSelectedSite(site);
+    setFormData(site);
+    setIsEditDialogOpen(true);
+  };
   const openAddDialog = () => {
-    setSelectedSite(null)
+    setSelectedSite(null);
     setFormData({
       difficulty_level: "beginner",
       is_featured: false,
       is_active: true,
       sort_order: 0,
-    })
-    setIsAddDialogOpen(true)
-  }
+    });
+    setIsAddDialogOpen(true);
+  };
+  const openDeleteDialog = (site: DiveSite) => {
+    setSiteToDelete(site);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleIntegerInput = (field: keyof DiveSite, value: string) => {
+    const stripped = value.replace(/[^0-9]/g, "");
+    const parsed = stripped === "" ? undefined : Number.parseInt(stripped, 10);
+    setFormData((prev) => ({ ...prev, [field]: parsed }));
+  };
 
   const filteredSites = diveSites.filter((site) => {
     const matchesSearch =
       site.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       site.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       site.marine_life?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      false
+      false;
+    const matchesDifficulty =
+      difficultyFilter === "all" || site.difficulty_level === difficultyFilter;
+    return matchesSearch && matchesDifficulty;
+  });
 
-    const matchesDifficulty = difficultyFilter === "all" || site.difficulty_level === difficultyFilter
-
-    return matchesSearch && matchesDifficulty
-  })
-
-  const activeSites = filteredSites.filter((site) => site.is_active).length
-  const featuredSites = filteredSites.filter((site) => site.is_featured).length
-  const beginnerSites = filteredSites.filter((site) => site.difficulty_level === "beginner").length
+  const activeSites = filteredSites.filter((s) => s.is_active).length;
+  const featuredSites = filteredSites.filter((s) => s.is_featured).length;
+  const beginnerSites = filteredSites.filter(
+    (s) => s.difficulty_level === "beginner",
+  ).length;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Dive Sites Management</h2>
-          <p className="text-slate-600">Manage diving locations and site information</p>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Dive Sites Management
+          </h2>
+          <p className="text-slate-600">
+            Manage diving locations and site information
+          </p>
         </div>
-        <Button onClick={openAddDialog} className="bg-cyan-600 hover:bg-cyan-700">
+        <Button
+          onClick={openAddDialog}
+          className="bg-cyan-600 hover:bg-cyan-700"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Dive Site
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -287,7 +342,8 @@ export default function AdminDiveSitesPage() {
             <div>
               <CardTitle>Dive Sites</CardTitle>
               <CardDescription>
-                {filteredSites.length} site{filteredSites.length !== 1 ? "s" : ""} found
+                {filteredSites.length} site
+                {filteredSites.length !== 1 ? "s" : ""} found
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -300,15 +356,18 @@ export default function AdminDiveSitesPage() {
                   className="pl-10 w-full sm:w-[250px]"
                 />
               </div>
-              <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+              <Select
+                value={difficultyFilter}
+                onValueChange={setDifficultyFilter}
+              >
                 <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue placeholder="Filter by difficulty" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  {difficultyOptions.map((difficulty) => (
-                    <SelectItem key={difficulty.value} value={difficulty.value}>
-                      {difficulty.label}
+                  {difficultyOptions.map((d) => (
+                    <SelectItem key={d.value} value={d.value}>
+                      {d.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -359,7 +418,9 @@ export default function AdminDiveSitesPage() {
                           <div>
                             <div className="font-medium">{site.name}</div>
                             {site.is_featured && (
-                              <Badge className="bg-yellow-100 text-yellow-800 text-xs">Featured</Badge>
+                              <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                                Featured
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -369,29 +430,51 @@ export default function AdminDiveSitesPage() {
                         {site.depth_min}m - {site.depth_max}m
                       </TableCell>
                       <TableCell>
-                        <Badge className={getDifficultyColor(site.difficulty_level)}>
-                          {difficultyOptions.find((d) => d.value === site.difficulty_level)?.label}
+                        <Badge
+                          className={getDifficultyColor(site.difficulty_level)}
+                        >
+                          {
+                            difficultyOptions.find(
+                              (d) => d.value === site.difficulty_level,
+                            )?.label
+                          }
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={site.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                        <Badge
+                          className={
+                            site.is_active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }
+                        >
                           {site.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openViewDialog(site)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openViewDialog(site)}
+                            title="View"
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(site)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(site)}
+                            title="Edit"
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(site)}
-                            disabled={isDeleting}
-                            className="text-red-600 hover:text-red-700"
+                            onClick={() => openDeleteDialog(site)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -415,43 +498,41 @@ export default function AdminDiveSitesPage() {
           </DialogHeader>
           {selectedSite && (
             <div className="space-y-4">
-              <div className="flex justify-center">
-                <img
-                  src={
-                    selectedSite.image
-                      ? `${LARAVEL_BASE_URL}/uploads/dive-sites/${selectedSite.image}`
-                      : "/placeholder.svg?height=200&width=300"
-                  }
-                  alt={selectedSite.name}
-                  className="w-full max-w-md h-48 object-cover rounded-lg"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-slate-800">Site Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <p>
-                      <strong>Depth:</strong> {selectedSite.depth_min}m - {selectedSite.depth_max}m
-                    </p>
-                    <p>
-                      <strong>Difficulty:</strong> {selectedSite.difficulty_level}
-                    </p>
-                    <p>
-                      <strong>Visibility:</strong> {selectedSite.visibility}
-                    </p>
-                  </div>
+              <img
+                src={
+                  selectedSite.image
+                    ? `${LARAVEL_BASE_URL}/uploads/dive-sites/${selectedSite.image}`
+                    : "/placeholder.svg?height=200&width=300"
+                }
+                alt={selectedSite.name}
+                className="w-full h-48 object-cover rounded-lg"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <p>
+                    <strong>Depth:</strong> {selectedSite.depth_min}m -{" "}
+                    {selectedSite.depth_max}m
+                  </p>
+                  <p>
+                    <strong>Difficulty:</strong> {selectedSite.difficulty_level}
+                  </p>
+                  <p>
+                    <strong>Visibility:</strong> {selectedSite.visibility}m
+                  </p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-slate-800">Best Time</h4>
-                  <p className="text-sm">{selectedSite.best_time_to_visit}</p>
+                  <p>
+                    <strong>Best Time:</strong>{" "}
+                    {selectedSite.best_time_to_visit}
+                  </p>
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-800">Description</h4>
+                <h4 className="font-semibold mb-1">Description</h4>
                 <p className="text-sm">{selectedSite.description}</p>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-800">Marine Life</h4>
+                <h4 className="font-semibold mb-1">Marine Life</h4>
                 <p className="text-sm">{selectedSite.marine_life}</p>
               </div>
             </div>
@@ -459,23 +540,27 @@ export default function AdminDiveSitesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add/Edit Dialog */}
+      {/* Add / Edit Dialog */}
       <Dialog
         open={isAddDialogOpen || isEditDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setIsAddDialogOpen(false)
-            setIsEditDialogOpen(false)
-            setFormData({})
-            setImageFile(null)
+            setIsAddDialogOpen(false);
+            setIsEditDialogOpen(false);
+            setFormData({});
+            setImageFile(null);
           }
         }}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedSite ? "Edit Dive Site" : "Add New Dive Site"}</DialogTitle>
+            <DialogTitle>
+              {selectedSite ? "Edit Dive Site" : "Add New Dive Site"}
+            </DialogTitle>
             <DialogDescription>
-              {selectedSite ? "Update dive site information" : "Create a new dive site"}
+              {selectedSite
+                ? "Update dive site information"
+                : "Create a new dive site"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -485,7 +570,9 @@ export default function AdminDiveSitesPage() {
                 <Input
                   id="name"
                   value={formData.name || ""}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Enter site name"
                 />
               </div>
@@ -494,23 +581,25 @@ export default function AdminDiveSitesPage() {
                 <Input
                   id="location"
                   value={formData.location || ""}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
                   placeholder="e.g., Anilao, Batangas"
                 />
               </div>
             </div>
-
             <div>
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
                 value={formData.description || ""}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Describe the dive site..."
                 rows={3}
               />
             </div>
-
             <div>
               <Label htmlFor="image">Site Image</Label>
               <Input
@@ -520,33 +609,57 @@ export default function AdminDiveSitesPage() {
                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
               />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="depth_min">Min Depth (m)</Label>
                 <Input
                   id="depth_min"
-                  type="number"
-                  value={formData.depth_min || ""}
-                  onChange={(e) => setFormData({ ...formData, depth_min: Number.parseInt(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.depth_min ?? ""}
+                  onChange={(e) =>
+                    handleIntegerInput("depth_min", e.target.value)
+                  }
+                  placeholder="e.g., 5"
                 />
               </div>
               <div>
                 <Label htmlFor="depth_max">Max Depth (m)</Label>
                 <Input
                   id="depth_max"
-                  type="number"
-                  value={formData.depth_max || ""}
-                  onChange={(e) => setFormData({ ...formData, depth_max: Number.parseInt(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.depth_max ?? ""}
+                  onChange={(e) =>
+                    handleIntegerInput("depth_max", e.target.value)
+                  }
+                  placeholder="e.g., 30"
+                />
+              </div>
+              <div>
+                <Label htmlFor="visibility">Visibility (m)</Label>
+                <Input
+                  id="visibility"
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.visibility ?? ""}
+                  onChange={(e) =>
+                    handleIntegerInput("visibility", e.target.value)
+                  }
+                  placeholder="e.g., 20"
                 />
               </div>
             </div>
-
             <div>
               <Label htmlFor="difficulty">Difficulty Level</Label>
               <Select
                 value={formData.difficulty_level || "beginner"}
-                onValueChange={(value) => setFormData({ ...formData, difficulty_level: value as any })}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    difficulty_level: value as DiveSite["difficulty_level"],
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -560,44 +673,40 @@ export default function AdminDiveSitesPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <Label htmlFor="visibility">Visibility</Label>
-              <Input
-                id="visibility"
-                value={formData.visibility || ""}
-                onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                placeholder="e.g., 15-25 meters"
-              />
-            </div>
-
             <div>
               <Label htmlFor="best_time">Best Time to Visit</Label>
               <Input
                 id="best_time"
                 value={formData.best_time_to_visit || ""}
-                onChange={(e) => setFormData({ ...formData, best_time_to_visit: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    best_time_to_visit: e.target.value,
+                  })
+                }
                 placeholder="e.g., November to May"
               />
             </div>
-
             <div>
               <Label htmlFor="marine_life">Marine Life</Label>
               <Textarea
                 id="marine_life"
                 value={formData.marine_life || ""}
-                onChange={(e) => setFormData({ ...formData, marine_life: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, marine_life: e.target.value })
+                }
                 placeholder="Describe the marine life that can be seen..."
                 rows={2}
               />
             </div>
-
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_featured"
                   checked={formData.is_featured || false}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_featured: checked })
+                  }
                 />
                 <Label htmlFor="is_featured">Featured Site</Label>
               </div>
@@ -605,23 +714,28 @@ export default function AdminDiveSitesPage() {
                 <Switch
                   id="is_active"
                   checked={formData.is_active !== false}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_active: checked })
+                  }
                 />
                 <Label htmlFor="is_active">Active</Label>
               </div>
             </div>
-
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setIsAddDialogOpen(false)
-                  setIsEditDialogOpen(false)
+                  setIsAddDialogOpen(false);
+                  setIsEditDialogOpen(false);
                 }}
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="bg-cyan-600 hover:bg-cyan-700" disabled={isSaving}>
+              <Button
+                onClick={handleSave}
+                className="bg-cyan-600 hover:bg-cyan-700"
+                disabled={isSaving}
+              >
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -638,7 +752,56 @@ export default function AdminDiveSitesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <div className="flex flex-col items-center justify-center gap-4 py-2">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <DialogHeader className="items-center text-center">
+              <DialogTitle className="text-red-600">
+                Delete Dive Site
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-slate-700">
+                  "{siteToDelete?.name}"
+                </span>
+                ? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 w-full sm:justify-center">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setSiteToDelete(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Toaster />
     </div>
-  )
+  );
 }
