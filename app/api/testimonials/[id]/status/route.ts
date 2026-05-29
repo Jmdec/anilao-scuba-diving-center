@@ -1,40 +1,60 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
-
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const body = await request.json()
-    const { status } = body
+    const { id } = await params;
+    const body = await request.json();
+    const { status } = body;
 
-    // Validate status
     if (!["pending", "approved", "rejected"].includes(status)) {
-      return NextResponse.json({ success: false, message: "Invalid status value" }, { status: 400 })
+      return NextResponse.json(
+        { message: "Invalid status value" },
+        { status: 400 },
+      );
     }
 
-    // Forward request to Laravel backend using PATCH method
-    const response = await fetch(`${API_BASE_URL}/testimonials/${params.id}/status`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) {
+      return NextResponse.json(
+        { message: "API configuration error" },
+        { status: 500 },
+      );
+    }
+
+    const response = await fetch(`${apiUrl}/testimonials/${id}/status`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        // Forward authorization header if present
         ...(request.headers.get("authorization") && {
           Authorization: request.headers.get("authorization")!,
         }),
       },
       body: JSON.stringify({ status }),
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status })
+      return NextResponse.json(
+        { message: data.message || "Failed to update status" },
+        { status: response.status },
+      );
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json({
+      success: true,
+      message: `Testimonial ${status} successfully`,
+      data: data.data,
+    });
   } catch (error) {
-    console.error("Error updating testimonial status:", error)
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    console.error("Testimonial status update error:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
