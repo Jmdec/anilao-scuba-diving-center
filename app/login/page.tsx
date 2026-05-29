@@ -27,26 +27,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      if (email === "asdc@gmail.com" && password === "asdc@2025") {
-        document.cookie = "token=admin-token; path=/; max-age=86400";
-        document.cookie = "role=admin; path=/; max-age=86400";
-        localStorage.setItem("token", "admin-token");
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            email: "asdc@gmail.com",
-            role: "admin",
-            name: "Admin",
-          }),
-        );
-        toast({
-          title: "Admin login successful",
-          description: "Welcome to ASDC Admin Panel!",
-        });
-        router.push("/admin");
-        return;
-      }
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || ""}/auth/login`,
         {
@@ -61,15 +41,23 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
+        const role = data.user.role || "user";
+
         document.cookie = `token=${data.token}; path=/; max-age=86400`;
-        document.cookie = `role=${data.user.role}; path=/; max-age=86400`;
+        document.cookie = `role=${role}; path=/; max-age=86400`;
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+
         toast({
           title: "Login successful",
           description: "Welcome back to ASDC Anilao!",
         });
-        router.push("/dashboard");
+
+        if (role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       } else {
         toast({
           title: "Login failed",
