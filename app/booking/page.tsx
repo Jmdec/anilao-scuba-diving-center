@@ -60,6 +60,7 @@ export default function BookingPage() {
     checkOut: "",
     guests: 1,
     specialRequests: "",
+    phoneNumber: "",
   });
   const [showBookingForm, setShowBookingForm] = useState(false);
   const router = useRouter();
@@ -71,7 +72,6 @@ export default function BookingPage() {
         const response = await fetch("/api/rooms");
         if (response.ok) {
           const data = await response.json();
-          console.log("[v0] API response:", data);
 
           let roomsArray = data;
           if (data && typeof data === "object" && !Array.isArray(data)) {
@@ -79,10 +79,6 @@ export default function BookingPage() {
           }
 
           if (!Array.isArray(roomsArray)) {
-            console.log(
-              "[v0] Invalid data format, expected array but got:",
-              typeof roomsArray,
-            );
             throw new Error("Invalid data format received from server");
           }
 
@@ -100,11 +96,6 @@ export default function BookingPage() {
           }));
           setRooms(transformedRooms);
         } else {
-          console.log(
-            "[v0] API response not ok:",
-            response.status,
-            response.statusText,
-          );
           toast({
             title: "Error",
             description: "Failed to load rooms. Please try again.",
@@ -146,6 +137,11 @@ export default function BookingPage() {
     setBookingData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePhoneChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 11);
+    setBookingData((prev) => ({ ...prev, phoneNumber: digitsOnly }));
+  };
+
   const calculateNights = () => {
     if (!bookingData.checkIn || !bookingData.checkOut) return 0;
     const checkIn = new Date(bookingData.checkIn);
@@ -173,7 +169,15 @@ export default function BookingPage() {
     }
 
     if (!selectedRoom) {
-      console.log("[v0] No selected room!");
+      return;
+    }
+
+    if (bookingData.phoneNumber.length !== 11) {
+      toast({
+        title: "Invalid phone number",
+        description: "Please enter a valid 11-digit phone number.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -195,6 +199,7 @@ export default function BookingPage() {
         check_out_date: bookingData.checkOut,
         guests: bookingData.guests,
         special_requests: bookingData.specialRequests,
+        phone_number: bookingData.phoneNumber,
       };
 
       const response = await fetch(
@@ -223,6 +228,7 @@ export default function BookingPage() {
           checkOut: "",
           guests: 1,
           specialRequests: "",
+          phoneNumber: "",
         });
       } else {
         toast({
@@ -516,6 +522,26 @@ export default function BookingPage() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <Input
+                          id="phoneNumber"
+                          type="tel"
+                          placeholder="09XXXXXXXXX"
+                          value={bookingData.phoneNumber}
+                          onChange={(e) => handlePhoneChange(e.target.value)}
+                          required
+                          maxLength={11}
+                          className="border-cyan-200 focus:border-cyan-400"
+                        />
+                        {bookingData.phoneNumber.length > 0 &&
+                          bookingData.phoneNumber.length < 11 && (
+                            <p className="text-xs text-red-500">
+                              Phone number must be exactly 11 digits
+                            </p>
+                          )}
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="specialRequests">
                           Special Requests (Optional)
                         </Label>
@@ -584,7 +610,11 @@ export default function BookingPage() {
                       <Button
                         type="submit"
                         className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3"
-                        disabled={!bookingData.checkIn || !bookingData.checkOut}
+                        disabled={
+                          !bookingData.checkIn ||
+                          !bookingData.checkOut ||
+                          bookingData.phoneNumber.length !== 11
+                        }
                       >
                         Confirm Booking
                       </Button>

@@ -1,48 +1,58 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/toast"
-import { ArrowLeft, Clock, Users, CheckCircle, Award, Star, Calendar, Shield, Waves } from "lucide-react"
-import DiverLoader from "@/components/diver-loader"
-import { Footer } from "@/components/footer"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/toast";
+import {
+  ArrowLeft,
+  Clock,
+  Users,
+  CheckCircle,
+  Award,
+  Star,
+  Calendar,
+  Shield,
+  Waves,
+} from "lucide-react";
+import DiverLoader from "@/components/diver-loader";
+import { Footer } from "@/components/footer";
 
 interface User {
-  id: number
-  firstName: string
-  lastName: string
-  email: string
-  current_certification_level: string
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  current_certification_level: string;
 }
 
 interface Certificate {
-  id: number
-  name: string
-  level: string
-  duration_days: number
-  price: number
-  prerequisites: string[]
-  description: string
-  min_age: number
-  max_depth: number
-  image?: string
+  id: number;
+  name: string;
+  level: string;
+  duration_days: number;
+  price: number;
+  prerequisites: string[];
+  description: string;
+  min_age: number;
+  max_depth: number;
+  image?: string;
 }
 
 export default function CertificationDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [certificate, setCertificate] = useState<Certificate | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const params = useParams();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [certificate, setCertificate] = useState<Certificate | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [applicationData, setApplicationData] = useState({
     emergencyContact: "",
     emergencyPhone: "",
@@ -54,84 +64,99 @@ export default function CertificationDetailPage() {
     medicalClearance: false,
     paymentMethod: "",
     paymentScreenshot: null as File | null,
-  })
+  });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
       try {
-        setUser(JSON.parse(userData))
+        setUser(JSON.parse(userData));
       } catch (error) {
-        console.error("Error parsing user data:", error)
+        console.error("Error parsing user data:", error);
       }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const fetchCertificate = async () => {
-      if (!params.id) return
+      if (!params.id) return;
 
       try {
-        setIsLoading(true)
-        const response = await fetch("/api/certificate")
-        const data = await response.json()
+        setIsLoading(true);
+        const response = await fetch("/api/certificate");
+        const data = await response.json();
 
         if (response.ok && data.success) {
           const foundCertificate = data.certifications?.find(
-            (cert: Certificate) => cert.id === Number.parseInt(params.id as string),
-          )
+            (cert: Certificate) =>
+              cert.id === Number.parseInt(params.id as string),
+          );
           if (foundCertificate) {
-            setCertificate(foundCertificate)
+            setCertificate(foundCertificate);
           } else {
             toast({
               title: "Certificate not found",
               description: "The requested certification could not be found.",
               variant: "destructive",
-            })
-            router.push("/certification")
+            });
+            router.push("/certification");
           }
         } else {
-          throw new Error(data.message || "Failed to fetch certificate")
+          throw new Error(data.message || "Failed to fetch certificate");
         }
       } catch (error) {
-        console.error("Error fetching certificate:", error)
+        console.error("Error fetching certificate:", error);
         toast({
           title: "Error",
           description: "Failed to load certification details.",
           variant: "destructive",
-        })
-        router.push("/certification")
+        });
+        router.push("/certification");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchCertificate()
-  }, [params.id, router])
+    fetchCertificate();
+  }, [params.id, router]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setApplicationData((prev) => ({ ...prev, [field]: value }))
-  }
+    setApplicationData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhoneChange = (field: string, value: string) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 11);
+    setApplicationData((prev) => ({ ...prev, [field]: digitsOnly }));
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setApplicationData((prev) => ({ ...prev, paymentScreenshot: file }))
+      setApplicationData((prev) => ({ ...prev, paymentScreenshot: file }));
     }
-  }
+  };
 
   const handleApplicationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!user || !certificate) return
+    if (!user || !certificate) return;
+
+    if (applicationData.emergencyPhone.length !== 11) {
+      toast({
+        title: "Invalid emergency phone number",
+        description: "Please enter a valid 11-digit phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!applicationData.agreeTerms) {
       toast({
         title: "Terms required",
         description: "Please agree to the terms and conditions.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!applicationData.paymentMethod) {
@@ -139,40 +164,60 @@ export default function CertificationDetailPage() {
         title: "Payment method required",
         description: "Please select a payment method.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    if (applicationData.paymentMethod !== "cash" && !applicationData.paymentScreenshot) {
+    if (
+      applicationData.paymentMethod !== "cash" &&
+      !applicationData.paymentScreenshot
+    ) {
       toast({
         title: "Payment screenshot required",
         description: "Please upload a screenshot of your payment.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const formData = new FormData()
-      formData.append("certification_id", certificate.id.toString())
+      const formData = new FormData();
+      formData.append("certification_id", certificate.id.toString());
       formData.append(
         "preferred_start_date",
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      )
-      formData.append("diving_experience_years", (Number.parseInt(applicationData.divingExperience) || 0).toString())
-      formData.append("total_dives", (Number.parseInt(applicationData.loggedDives) || 0).toString())
-      formData.append("deepest_dive", "0")
-      formData.append("last_dive_date", applicationData.lastDive || "")
-      formData.append("medical_conditions", applicationData.medicalConditions)
-      formData.append("emergency_contact_name", applicationData.emergencyContact)
-      formData.append("emergency_contact_phone", applicationData.emergencyPhone)
-      formData.append("emergency_contact_relationship", "Emergency Contact")
-      formData.append("payment_method", applicationData.paymentMethod)
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      );
+      formData.append(
+        "diving_experience_years",
+        (Number.parseInt(applicationData.divingExperience) || 0).toString(),
+      );
+      formData.append(
+        "total_dives",
+        (Number.parseInt(applicationData.loggedDives) || 0).toString(),
+      );
+      formData.append("deepest_dive", "0");
+      formData.append("last_dive_date", applicationData.lastDive || "");
+      formData.append("medical_conditions", applicationData.medicalConditions);
+      formData.append(
+        "emergency_contact_name",
+        applicationData.emergencyContact,
+      );
+      formData.append(
+        "emergency_contact_phone",
+        applicationData.emergencyPhone,
+      );
+      formData.append("emergency_contact_relationship", "Emergency Contact");
+      formData.append("payment_method", applicationData.paymentMethod);
 
       if (applicationData.paymentScreenshot) {
-        formData.append("screenshot_payment", applicationData.paymentScreenshot)
+        formData.append(
+          "screenshot_payment",
+          applicationData.paymentScreenshot,
+        );
       }
 
       const response = await fetch("/api/certifications/apply", {
@@ -181,52 +226,52 @@ export default function CertificationDetailPage() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: formData,
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok && data.success) {
         toast({
           title: "Application submitted!",
           description: `Your application for ${certificate.name} has been submitted successfully.`,
-        })
-        router.push("/certification")
+        });
+        router.push("/certification");
       } else {
         toast({
           title: "Application failed",
           description: data.message || "Something went wrong",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
-      console.error("Application error:", error)
+      console.error("Application error:", error);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Beginner":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "Intermediate":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "Advanced":
-        return "bg-orange-100 text-orange-800 border-orange-200"
+        return "bg-orange-100 text-orange-800 border-orange-200";
       case "Professional":
-        return "bg-purple-100 text-purple-800 border-purple-200"
+        return "bg-purple-100 text-purple-800 border-purple-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getSkillsForCertificate = (certificateName: string) => {
-    const name = certificateName.toLowerCase()
+    const name = certificateName.toLowerCase();
 
     if (name.includes("open water") || name.includes("beginner")) {
       return [
@@ -236,7 +281,7 @@ export default function CertificationDetailPage() {
         "Buoyancy control and underwater navigation",
         "Emergency ascent procedures",
         "Marine life awareness and conservation basics",
-      ]
+      ];
     } else if (name.includes("advanced") || name.includes("adventure")) {
       return [
         "Advanced diving techniques and safety procedures",
@@ -245,7 +290,7 @@ export default function CertificationDetailPage() {
         "Night diving and limited visibility techniques",
         "Wreck diving safety and penetration procedures",
         "Advanced marine life identification and photography",
-      ]
+      ];
     } else if (name.includes("rescue") || name.includes("emergency")) {
       return [
         "Emergency response and rescue techniques",
@@ -254,7 +299,7 @@ export default function CertificationDetailPage() {
         "First aid and CPR for diving emergencies",
         "Accident prevention and risk assessment",
         "Emergency action plan development and execution",
-      ]
+      ];
     } else if (name.includes("divemaster") || name.includes("professional")) {
       return [
         "Professional diving leadership and supervision",
@@ -263,7 +308,7 @@ export default function CertificationDetailPage() {
         "Equipment maintenance and dive site assessment",
         "Business aspects of diving and customer service",
         "Advanced rescue techniques and emergency management",
-      ]
+      ];
     } else if (name.includes("nitrox") || name.includes("enriched")) {
       return [
         "Enriched air nitrox theory and gas management",
@@ -272,7 +317,7 @@ export default function CertificationDetailPage() {
         "Extended bottom time calculations",
         "Oxygen toxicity prevention and recognition",
         "Advanced dive computer programming for nitrox",
-      ]
+      ];
     } else if (name.includes("wreck")) {
       return [
         "Wreck diving safety and penetration techniques",
@@ -281,7 +326,7 @@ export default function CertificationDetailPage() {
         "Wreck mapping and underwater archaeology basics",
         "Emergency procedures for overhead environments",
         "Specialized wreck diving equipment usage",
-      ]
+      ];
     } else if (name.includes("deep")) {
       return [
         "Deep water diving protocols and safety procedures",
@@ -290,9 +335,8 @@ export default function CertificationDetailPage() {
         "Deep water emergency ascent procedures",
         "Advanced dive computer usage and backup planning",
         "Deep water marine life identification",
-      ]
+      ];
     } else {
-      // Default skills for any other certification
       return [
         `${certificateName} specific techniques and procedures`,
         "Equipment handling and maintenance for this certification",
@@ -300,16 +344,16 @@ export default function CertificationDetailPage() {
         "Underwater skills and communication methods",
         "Environmental awareness and conservation practices",
         "Certification-specific dive planning and execution",
-      ]
+      ];
     }
-  }
+  };
 
   if (isLoading) {
-    return <DiverLoader message="Loading Certification Details..." size="lg" />
+    return <DiverLoader message="Loading Certification Details..." size="lg" />;
   }
 
   if (!certificate) {
-    return null
+    return null;
   }
 
   return (
@@ -331,7 +375,11 @@ export default function CertificationDetailPage() {
             {/* Course Header */}
             <div className="lg:col-span-2 text-white">
               <div className="flex items-center gap-3 mb-3">
-                <Badge className={`${getLevelColor(certificate.level)} text-sm px-3 py-1`}>{certificate.level}</Badge>
+                <Badge
+                  className={`${getLevelColor(certificate.level)} text-sm px-3 py-1`}
+                >
+                  {certificate.level}
+                </Badge>
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -342,23 +390,31 @@ export default function CertificationDetailPage() {
                 </div>
               </div>
               <h1 className="text-4xl font-bold mb-3">{certificate.name}</h1>
-              <p className="text-cyan-100 text-lg mb-4 leading-relaxed">{certificate.description}</p>
+              <p className="text-cyan-100 text-lg mb-4 leading-relaxed">
+                {certificate.description}
+              </p>
 
               {/* Quick Stats */}
               <div className="grid grid-cols-4 gap-4 mb-4">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
                   <Clock className="w-5 h-5 mx-auto mb-1 text-cyan-300" />
-                  <div className="text-xl font-bold">{certificate.duration_days}</div>
+                  <div className="text-xl font-bold">
+                    {certificate.duration_days}
+                  </div>
                   <div className="text-xs text-cyan-200">Days</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
                   <Users className="w-5 h-5 mx-auto mb-1 text-blue-300" />
-                  <div className="text-xl font-bold">{certificate.min_age}+</div>
+                  <div className="text-xl font-bold">
+                    {certificate.min_age}+
+                  </div>
                   <div className="text-xs text-cyan-200">Min Age</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
                   <Waves className="w-5 h-5 mx-auto mb-1 text-teal-300" />
-                  <div className="text-xl font-bold">{certificate.max_depth}m</div>
+                  <div className="text-xl font-bold">
+                    {certificate.max_depth}m
+                  </div>
                   <div className="text-xs text-cyan-200">Max Depth</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
@@ -370,7 +426,9 @@ export default function CertificationDetailPage() {
 
               <div className="text-3xl font-bold text-yellow-400">
                 ₱{Number(certificate.price).toLocaleString()}
-                <span className="text-lg text-cyan-200 font-normal ml-2">total course fee</span>
+                <span className="text-lg text-cyan-200 font-normal ml-2">
+                  total course fee
+                </span>
               </div>
             </div>
 
@@ -405,15 +463,17 @@ export default function CertificationDetailPage() {
                     What You'll Master
                   </h3>
                   <div className="grid md:grid-cols-2 gap-3">
-                    {getSkillsForCertificate(certificate.name).map((skill, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 p-3 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg"
-                      >
-                        <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm">{skill}</span>
-                      </div>
-                    ))}
+                    {getSkillsForCertificate(certificate.name).map(
+                      (skill, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start gap-3 p-3 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg"
+                        >
+                          <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700 text-sm">{skill}</span>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -427,7 +487,10 @@ export default function CertificationDetailPage() {
                   </h3>
                   <div className="space-y-3">
                     {certificate.prerequisites.map((prereq, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 border-l-4 border-orange-400 bg-orange-50">
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 p-3 border-l-4 border-orange-400 bg-orange-50"
+                      >
                         <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
                         <span className="text-gray-700">{prereq}</span>
                       </div>
@@ -445,14 +508,26 @@ export default function CertificationDetailPage() {
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">Theory Sessions</h4>
-                      <p className="text-sm text-blue-700">2 days of classroom learning</p>
-                      <p className="text-xs text-blue-600 mt-1">Includes materials and certification</p>
+                      <h4 className="font-semibold text-blue-800 mb-2">
+                        Theory Sessions
+                      </h4>
+                      <p className="text-sm text-blue-700">
+                        2 days of classroom learning
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Includes materials and certification
+                      </p>
                     </div>
                     <div className="bg-teal-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-teal-800 mb-2">Practical Training</h4>
-                      <p className="text-sm text-teal-700">{certificate.duration_days - 2} day/s of diving</p>
-                      <p className="text-xs text-teal-600 mt-1">Open water and pool sessions</p>
+                      <h4 className="font-semibold text-teal-800 mb-2">
+                        Practical Training
+                      </h4>
+                      <p className="text-sm text-teal-700">
+                        {certificate.duration_days - 2} day/s of diving
+                      </p>
+                      <p className="text-xs text-teal-600 mt-1">
+                        Open water and pool sessions
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -464,76 +539,120 @@ export default function CertificationDetailPage() {
               <Card className="shadow-xl border-0 sticky top-6">
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Start Your Journey</h2>
-                    <p className="text-gray-600 text-sm">Join thousands of certified divers</p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                      Start Your Journey
+                    </h2>
+                    <p className="text-gray-600 text-sm">
+                      Join thousands of certified divers
+                    </p>
                   </div>
 
-                  <form onSubmit={handleApplicationSubmit} className="space-y-4">
+                  <form
+                    onSubmit={handleApplicationSubmit}
+                    className="space-y-4"
+                  >
                     {/* Emergency Contact */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">Emergency Contact</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Emergency Contact
+                      </Label>
                       <div className="grid grid-cols-1 gap-2">
                         <Input
                           placeholder="Full name"
                           value={applicationData.emergencyContact}
-                          onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "emergencyContact",
+                              e.target.value,
+                            )
+                          }
                           required
                           className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
                         />
                         <Input
                           type="tel"
-                          placeholder="+63 912 345 6789"
+                          placeholder="09XXXXXXXXX"
                           value={applicationData.emergencyPhone}
-                          onChange={(e) => handleInputChange("emergencyPhone", e.target.value)}
+                          onChange={(e) =>
+                            handlePhoneChange("emergencyPhone", e.target.value)
+                          }
                           required
+                          maxLength={11}
                           className="border-gray-300 focus:border-cyan-500 focus:ring-cyan-500"
                         />
+                        {applicationData.emergencyPhone.length > 0 &&
+                          applicationData.emergencyPhone.length < 11 && (
+                            <p className="text-xs text-red-500">
+                              Phone number must be exactly 11 digits
+                            </p>
+                          )}
                       </div>
                     </div>
 
                     {/* Diving Experience */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">Diving Experience</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Diving Experience
+                      </Label>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <Input
                             type="number"
                             placeholder="Years"
                             value={applicationData.divingExperience}
-                            onChange={(e) => handleInputChange("divingExperience", e.target.value)}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "divingExperience",
+                                e.target.value,
+                              )
+                            }
                             className="border-gray-300 focus:border-cyan-500 text-center"
                           />
-                          <Label className="text-xs text-gray-500 text-center block mt-1">Experience</Label>
+                          <Label className="text-xs text-gray-500 text-center block mt-1">
+                            Experience
+                          </Label>
                         </div>
                         <div>
                           <Input
                             type="number"
                             placeholder="Dives"
                             value={applicationData.loggedDives}
-                            onChange={(e) => handleInputChange("loggedDives", e.target.value)}
+                            onChange={(e) =>
+                              handleInputChange("loggedDives", e.target.value)
+                            }
                             className="border-gray-300 focus:border-cyan-500 text-center"
                           />
-                          <Label className="text-xs text-gray-500 text-center block mt-1">Logged</Label>
+                          <Label className="text-xs text-gray-500 text-center block mt-1">
+                            Logged
+                          </Label>
                         </div>
                         <div>
                           <Input
                             type="date"
                             value={applicationData.lastDive}
-                            onChange={(e) => handleInputChange("lastDive", e.target.value)}
+                            onChange={(e) =>
+                              handleInputChange("lastDive", e.target.value)
+                            }
                             className="border-gray-300 focus:border-cyan-500 text-center"
                           />
-                          <Label className="text-xs text-gray-500 text-center block mt-1">Last Dive</Label>
+                          <Label className="text-xs text-gray-500 text-center block mt-1">
+                            Last Dive
+                          </Label>
                         </div>
                       </div>
                     </div>
 
                     {/* Medical Conditions */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">Medical Information</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Medical Information
+                      </Label>
                       <Textarea
                         placeholder="Any medical conditions or medications..."
                         value={applicationData.medicalConditions}
-                        onChange={(e) => handleInputChange("medicalConditions", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("medicalConditions", e.target.value)
+                        }
                         className="border-gray-300 focus:border-cyan-500 resize-none"
                         rows={2}
                       />
@@ -541,91 +660,112 @@ export default function CertificationDetailPage() {
 
                     {/* Payment Method */}
                     <div className="space-y-3">
-                      <Label className="text-sm font-semibold text-gray-700">Payment Method</Label>
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Payment Method
+                      </Label>
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           {
                             id: "gcash",
                             label: "GCash",
                             number: "09456754591",
+                            comingSoon: false,
                           },
                           {
                             id: "maya",
                             label: "Maya",
                             number: "09456754591",
+                            comingSoon: false,
                           },
                           {
                             id: "bank",
                             label: "Bank Transfer",
                             number: "",
+                            comingSoon: true,
                           },
                           {
                             id: "cash",
                             label: "Cash Payment",
                             number: "",
+                            comingSoon: false,
                           },
                         ].map((method) => (
                           <div
                             key={method.id}
-                            className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50"
+                            className={`relative flex items-center space-x-2 p-2 border rounded-lg transition-colors ${
+                              method.comingSoon
+                                ? "opacity-50 cursor-not-allowed bg-gray-50"
+                                : "hover:bg-gray-50 cursor-pointer"
+                            }`}
                           >
                             <input
                               type="radio"
                               id={method.id}
                               name="paymentMethod"
                               value={method.id}
-                              checked={applicationData.paymentMethod === method.id}
-                              onChange={(e) => handleInputChange("paymentMethod", e.target.value)}
-                              className="h-4 w-4 text-cyan-600"
+                              checked={
+                                applicationData.paymentMethod === method.id
+                              }
+                              onChange={(e) =>
+                                !method.comingSoon &&
+                                handleInputChange(
+                                  "paymentMethod",
+                                  e.target.value,
+                                )
+                              }
+                              disabled={method.comingSoon}
+                              className="h-4 w-4 text-cyan-600 disabled:cursor-not-allowed"
                             />
-                            <Label htmlFor={method.id} className="text-sm cursor-pointer">
+                            <Label
+                              htmlFor={method.id}
+                              className={`text-sm ${method.comingSoon ? "cursor-not-allowed" : "cursor-pointer"}`}
+                            >
                               <div className="font-medium">{method.label}</div>
-                              {method.number && <div className="text-xs text-gray-500">{method.number}</div>}
+                              {method.number && (
+                                <div className="text-xs text-gray-500">
+                                  {method.number}
+                                </div>
+                              )}
+                              {method.comingSoon && (
+                                <div className="text-xs text-amber-600 font-medium">
+                                  Coming Soon
+                                </div>
+                              )}
                             </Label>
                           </div>
                         ))}
                       </div>
 
-                      {applicationData.paymentMethod === "bank" && (
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                          <h4 className="text-sm font-semibold text-blue-800 mb-2">Bank Details:</h4>
-                          <div className="text-xs space-y-1">
-                            <div>
-                              <strong>BPI:</strong> 1234-5678-90
-                            </div>
-                            <div>
-                              <strong>BDO:</strong> 9876-5432-10
-                            </div>
-                            <div>
-                              <strong>Name:</strong> Dive Center Philippines
-                            </div>
+                      {applicationData.paymentMethod &&
+                        applicationData.paymentMethod !== "cash" && (
+                          <div className="space-y-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileChange}
+                              required
+                              className="border-gray-300 focus:border-cyan-500"
+                            />
+                            <p className="text-xs text-gray-500">
+                              Upload payment screenshot
+                            </p>
                           </div>
-                        </div>
-                      )}
-
-                      {applicationData.paymentMethod && applicationData.paymentMethod !== "cash" && (
-                        <div className="space-y-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            required
-                            className="border-gray-300 focus:border-cyan-500"
-                          />
-                          <p className="text-xs text-gray-500">Upload payment screenshot</p>
-                        </div>
-                      )}
+                        )}
 
                       {applicationData.paymentMethod === "cash" && (
                         <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                          <p className="text-xs text-yellow-800">Pay at our dive center during registration.</p>
+                          <p className="text-xs text-yellow-800">
+                            Pay at our dive center during registration.
+                          </p>
                         </div>
                       )}
                     </div>
 
                     {/* Course Summary */}
                     <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-lg border border-cyan-200">
-                      <h4 className="font-semibold text-gray-800 mb-2">Course Summary</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">
+                        Course Summary
+                      </h4>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span>Duration:</span>
@@ -637,7 +777,9 @@ export default function CertificationDetailPage() {
                         </div>
                         <div className="flex justify-between font-bold text-cyan-800 pt-2 border-t">
                           <span>Total:</span>
-                          <span>₱{Number(certificate.price).toLocaleString()}</span>
+                          <span>
+                            ₱{Number(certificate.price).toLocaleString()}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -648,11 +790,20 @@ export default function CertificationDetailPage() {
                         <Checkbox
                           id="medicalClearance"
                           checked={applicationData.medicalClearance}
-                          onCheckedChange={(checked) => handleInputChange("medicalClearance", checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleInputChange(
+                              "medicalClearance",
+                              checked as boolean,
+                            )
+                          }
                           className="mt-1"
                         />
-                        <Label htmlFor="medicalClearance" className="text-xs leading-tight">
-                          I confirm medical fitness and will provide clearance if required
+                        <Label
+                          htmlFor="medicalClearance"
+                          className="text-xs leading-tight"
+                        >
+                          I confirm medical fitness and will provide clearance
+                          if required
                         </Label>
                       </div>
 
@@ -660,10 +811,15 @@ export default function CertificationDetailPage() {
                         <Checkbox
                           id="agreeTerms"
                           checked={applicationData.agreeTerms}
-                          onCheckedChange={(checked) => handleInputChange("agreeTerms", checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleInputChange("agreeTerms", checked as boolean)
+                          }
                           className="mt-1"
                         />
-                        <Label htmlFor="agreeTerms" className="text-xs leading-tight">
+                        <Label
+                          htmlFor="agreeTerms"
+                          className="text-xs leading-tight"
+                        >
                           I agree to terms, conditions, and liability waivers
                         </Label>
                       </div>
@@ -673,7 +829,12 @@ export default function CertificationDetailPage() {
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg shadow-lg"
-                      disabled={isSubmitting || !applicationData.agreeTerms || !applicationData.paymentMethod}
+                      disabled={
+                        isSubmitting ||
+                        !applicationData.agreeTerms ||
+                        !applicationData.paymentMethod ||
+                        applicationData.emergencyPhone.length !== 11
+                      }
                     >
                       {isSubmitting ? "Processing..." : "Enroll Now"}
                     </Button>
@@ -687,5 +848,5 @@ export default function CertificationDetailPage() {
 
       <Footer />
     </div>
-  )
+  );
 }
