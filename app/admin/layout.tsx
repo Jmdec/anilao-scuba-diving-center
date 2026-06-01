@@ -1,5 +1,6 @@
 "use client";
 import type React from "react";
+import { useState } from "react";
 import {
   SidebarProvider,
   Sidebar,
@@ -10,6 +11,8 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import {
   Home,
@@ -21,6 +24,11 @@ import {
   ImageIcon,
   Anchor,
   Star,
+  FileText,
+  Camera,
+  Video,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { Toaster } from "@/components/ui/toaster";
@@ -35,6 +43,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [galleryExpanded, setGalleryExpanded] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -47,7 +56,17 @@ export default function AdminLayout({
     { href: "/admin/AppliedCertificate", icon: Award, label: "Applications" },
     { href: "/admin/bookings", icon: BarChart3, label: "Bookings" },
     { href: "/admin/certificate", icon: Award, label: "Certificate" },
-    { href: "/admin/blog", icon: ImageIcon, label: "Gallery Management" },
+    {
+      href: "/admin/blog",
+      icon: ImageIcon,
+      label: "Gallery Management",
+      hasSubmenu: true,
+      subitems: [
+        { href: "/admin/blog", icon: FileText, label: "Blog Posts" },
+        { href: "/admin/gallery/photo", icon: Camera, label: "Photo Gallery" },
+        { href: "/admin/gallery/video", icon: Video, label: "Video Gallery" },
+      ],
+    },
     { href: "/admin/rooms", icon: Bed, label: "Rooms" },
     { href: "/admin/testimonials", icon: Star, label: "Testimonials" },
     { href: "/admin/top-dive-site", icon: Anchor, label: "Top Dive Site" },
@@ -76,7 +95,101 @@ export default function AdminLayout({
               <SidebarMenu className="space-y-1">
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
+                  const isSubActive = item.subitems?.some(
+                    (subitem) => pathname === subitem.href
+                  );
                   const Icon = item.icon;
+
+                  if (item.hasSubmenu) {
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          onClick={() => setGalleryExpanded(!galleryExpanded)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group cursor-pointer w-full",
+                            (isActive || isSubActive || galleryExpanded)
+                              ? "bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25"
+                              : "text-slate-700 hover:bg-slate-100 hover:text-cyan-700",
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "w-5 h-5 transition-transform duration-200",
+                              (isActive || isSubActive || galleryExpanded)
+                                ? "text-white"
+                                : "text-slate-500 group-hover:text-cyan-600",
+                              "group-hover:scale-110",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "font-medium text-sm flex-1",
+                              (isActive || isSubActive || galleryExpanded)
+                                ? "text-white"
+                                : "group-hover:text-cyan-700",
+                            )}
+                          >
+                            {item.label}
+                          </span>
+                          {galleryExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-white" />
+                          ) : (
+                            <ChevronRight
+                              className={cn(
+                                "w-4 h-4",
+                                (isActive || isSubActive)
+                                  ? "text-white"
+                                  : "text-slate-500 group-hover:text-cyan-600",
+                              )}
+                            />
+                          )}
+                        </SidebarMenuButton>
+                        {galleryExpanded && item.subitems && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {item.subitems.map((subitem) => {
+                              const isSubItemActive = pathname === subitem.href;
+                              const SubIcon = subitem.icon;
+                              return (
+                                <SidebarMenuItem key={subitem.href}>
+                                  <SidebarMenuButton asChild>
+                                    <Link
+                                      href={subitem.href}
+                                      className={cn(
+                                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                                        isSubItemActive
+                                          ? "bg-cyan-100 text-cyan-700"
+                                          : "text-slate-600 hover:bg-slate-100 hover:text-cyan-700",
+                                      )}
+                                    >
+                                      <SubIcon
+                                        className={cn(
+                                          "w-4 h-4 transition-transform duration-200",
+                                          isSubItemActive
+                                            ? "text-cyan-600"
+                                            : "text-slate-400 group-hover:text-cyan-600",
+                                          "group-hover:scale-110",
+                                        )}
+                                      />
+                                      <span
+                                        className={cn(
+                                          "font-medium text-xs",
+                                          isSubItemActive
+                                            ? "text-cyan-700"
+                                            : "group-hover:text-cyan-700",
+                                        )}
+                                      >
+                                        {subitem.label}
+                                      </span>
+                                    </Link>
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </SidebarMenuItem>
+                    );
+                  }
 
                   return (
                     <SidebarMenuItem key={item.href}>

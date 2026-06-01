@@ -25,17 +25,11 @@ export const metadata: Metadata = {
   description: "Book your diving adventure and PADI certifications at Anilao",
   generator: "v0.app",
   manifest: "/manifest.json",
-  themeColor: "#1ae6ea",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "ASDC Anilao",
     startupImage: "/icon512_maskable.png",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    viewportFit: "cover",
   },
   applicationName: "ASDC Anilao",
   keywords: [
@@ -74,6 +68,13 @@ export const metadata: Metadata = {
     description: "Book your diving adventure and PADI certifications at Anilao",
     images: ["https://anilao-scuba-diving-center.vercel.app/og-image.jpg"],
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1ae6ea",
 };
 
 export default function RootLayout({
