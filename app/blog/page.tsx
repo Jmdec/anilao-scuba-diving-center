@@ -103,6 +103,54 @@ const formatNumber = (num: number) => {
   return num.toString()
 }
 
+const escapeSvgText = (text: string) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+
+const getPlaceholderThumbnail = (title: string) => {
+  const safeTitle = escapeSvgText((title || "Untitled Video").trim()).slice(0, 48)
+  const parts = safeTitle.length > 24 ? [safeTitle.slice(0, 24), safeTitle.slice(24)] : [safeTitle]
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#071b2f" />
+          <stop offset="100%" stop-color="#0f3a57" />
+        </linearGradient>
+        <linearGradient id="p" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#38bdf8" />
+          <stop offset="100%" stop-color="#0ea5e9" />
+        </linearGradient>
+      </defs>
+      <rect width="1280" height="720" rx="40" fill="url(#g)" />
+      <rect x="60" y="60" width="1160" height="600" rx="40" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)" stroke-width="2" />
+      <circle cx="640" cy="360" r="120" fill="rgba(255,255,255,0.08)" />
+      <path d="M610 320 L610 400 L690 360 Z" fill="url(#p)" />
+      ${parts.map((line, index) => `
+        <text x="640" y="520" text-anchor="middle" fill="#f8fafc" font-family="Inter, sans-serif" font-size="48" font-weight="700" letter-spacing="-0.03em" dy="${index * 64}em">${line}</text>
+      `).join("")}
+      <rect x="80" y="38" width="260" height="56" rx="28" fill="rgba(255,255,255,0.08)" />
+      <text x="210" y="72" text-anchor="middle" fill="#cbd5e1" font-family="Inter, sans-serif" font-size="22" font-weight="600">Video Preview</text>
+      <rect x="1000" y="560" width="160" height="36" rx="18" fill="rgba(255,255,255,0.08)" />
+      <text x="1080" y="585" text-anchor="middle" fill="#94a3b8" font-family="Inter, sans-serif" font-size="18" font-weight="500">Anilao</text>
+    </svg>
+  `
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+}
+
+const getSafeThumbnail = (
+  title: string,
+  thumbnail?: string | null
+) => {
+  return thumbnail && thumbnail.trim() !== ""
+    ? thumbnail
+    : getPlaceholderThumbnail(title)
+}
+
 const PhotoCard = ({ item, className, onClick }: { item: PhotoPost; className: string; onClick: () => void }) => {
   const [carouselIndex, setCarouselIndex] = useState(0)
 
@@ -110,7 +158,12 @@ const PhotoCard = ({ item, className, onClick }: { item: PhotoPost; className: s
     setCarouselIndex(0)
   }, [item.id])
 
-  const imageSources = item.images?.length ? item.images : [item.image_url || "/placeholder.svg"]
+  const imageSources = item.images?.length
+    ? item.images
+    : [
+      item.image_url ||
+      getPlaceholderThumbnail(item.title)
+    ]
   const currentImage = imageSources[carouselIndex] || imageSources[0]
 
   return (
@@ -120,11 +173,14 @@ const PhotoCard = ({ item, className, onClick }: { item: PhotoPost; className: s
           src={currentImage}
           alt={item.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          onError={(e) => {
+            e.currentTarget.src = getPlaceholderThumbnail(item.title)
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
         {imageSources.length > 1 && (
-          <> 
+          <>
             <span className="absolute bottom-3 right-3 bg-black/70 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
               {carouselIndex + 1}/{imageSources.length}
             </span>
@@ -271,6 +327,9 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                       src={item.thumbnail || "/placeholder.svg"}
                       alt={item.title}
                       className="w-full h-full object-cover opacity-60"
+                      onError={(e) => {
+                        e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                      }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-xl">
@@ -311,10 +370,17 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
               <div className="relative bg-slate-950 flex items-center justify-center select-none" style={{ minHeight: "320px", maxHeight: "65vh" }}>
                 <img
                   key={carouselIndex}
-                  src={item.images?.[carouselIndex] || item.image_url || "/placeholder.svg"}
+                  src={
+                    item.images?.[carouselIndex] ||
+                    item.image_url ||
+                    getPlaceholderThumbnail(item.title)
+                  }
                   alt={`${item.title} – ${carouselIndex + 1} of ${item.images?.length ?? 1}`}
                   className="w-full object-contain transition-opacity duration-300"
                   style={{ maxHeight: "65vh" }}
+                  onError={(e) => {
+                    e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                  }}
                 />
 
                 {/* Prev / Next arrows — only when multiple images */}
@@ -375,7 +441,10 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                       className={`shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === carouselIndex ? "border-cyan-400 opacity-100" : "border-transparent opacity-50 hover:opacity-80"}`}
                       aria-label={`View photo ${idx + 1}`}
                     >
-                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <img src={src} alt="" className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                        }} />
                     </button>
                   ))}
                 </div>
@@ -412,7 +481,7 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                 <div className="bg-black aspect-video w-full">
                   <video
                     src={item.video_url}
-                    poster={item.thumbnail || item.video_poster}
+                    poster={item.thumbnail || item.video_poster || getPlaceholderThumbnail(item.title)}
                     controls
                     autoPlay
                     className="w-full h-full object-contain"
@@ -425,6 +494,9 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                     alt={item.title}
                     className="w-full object-cover"
                     style={{ maxHeight: "40vh" }}
+                    onError={(e) => {
+                      e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                    }}
                   />
                 </div>
               ) : (
@@ -519,7 +591,7 @@ const VideoBlogPage = () => {
       const video = document.createElement("video")
       let settled = false
       const cleanup = () => {
-        try { video.pause() } catch (e) {}
+        try { video.pause() } catch (e) { }
         video.src = ""
         video.remove()
       }
@@ -603,7 +675,7 @@ const VideoBlogPage = () => {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    Promise.all(pending).catch(() => {})
+    Promise.all(pending).catch(() => { })
   }, [videos, blogs, tempThumbnails])
 
   const openModal = useCallback((item: ContentItem, index: number) => {
@@ -658,8 +730,12 @@ const VideoBlogPage = () => {
             id: video.id.toString(),
             title: video.title || "Untitled Video",
             description: video.description || "No description available",
-            thumbnail: video.thumbnail_url ? `${base}${video.thumbnail_url}` : "/video-thumbnail.png",
-            videoUrl: video.video_url ? `${base}${video.video_url}` : "#",
+            thumbnail: getSafeThumbnail(
+              video.title || "Untitled Video",
+              video.thumbnail_url
+                ? `${base}${video.thumbnail_url}`
+                : null
+            ), videoUrl: video.video_url ? `${base}${video.video_url}` : "#",
             duration: video.duration || "0:00",
             views: video.views || 0,
             likes: video.likes || 0,
@@ -679,7 +755,11 @@ const VideoBlogPage = () => {
             const images = Array.from(new Set(rawImages.map((url: string) =>
               url.startsWith("http") ? url : `${base}${url}`
             )))
-            const firstImage = images[0] || "/placeholder.svg"
+            const firstImage =
+              images[0] ||
+              getPlaceholderThumbnail(
+                photo.title || "Untitled Photo"
+              )
             return {
               id: photo.id.toString(),
               title: photo.title || "Untitled Photo",
@@ -729,7 +809,12 @@ const VideoBlogPage = () => {
               created_at: blog.created_at || new Date().toISOString(),
               updated_at: blog.updated_at || new Date().toISOString(),
               // Real image thumbnail (only when thumbnail_url exists)
-              thumbnail: blog.thumbnail_url ? `${base}${blog.thumbnail_url}` : undefined,
+              thumbnail: getSafeThumbnail(
+                blog.title || "Untitled Blog",
+                blog.thumbnail_url
+                  ? `${base}${blog.thumbnail_url}`
+                  : null
+              ),
               // Fallback: use video_url as poster/preview source when no thumbnail image
               video_poster: !blog.thumbnail_url && blog.video_url
                 ? `${base}${blog.video_url}`
@@ -865,7 +950,9 @@ const VideoBlogPage = () => {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {featuredVideos.map((video, index) => {
-                const thumb = tempThumbnails[video.id] || video.thumbnail
+                const thumb =
+                  tempThumbnails[video.id] ||
+                  video.thumbnail
                 return (
                   <Card
                     key={video.id}
@@ -886,9 +973,17 @@ const VideoBlogPage = () => {
                           playsInline
                           preload="metadata"
                           onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                          onError={(e) => {
+                            e.currentTarget.src = getPlaceholderThumbnail(video.title)
+                          }}
                         />
                       ) : (
-                        <img src="/placeholder.svg" alt={video.title} className={`w-full object-cover ${index === 0 ? "h-96" : "h-56"}`} />
+                        <img src={getPlaceholderThumbnail(video.title)} alt={video.title}
+                          className={`w-full object-cover ${index === 0 ? "h-96" : "h-56"}`}
+                          onError={(e) => {
+                            e.currentTarget.src = getPlaceholderThumbnail(video.title)
+                          }}
+                        />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -939,11 +1034,10 @@ const VideoBlogPage = () => {
                   key={category.key}
                   variant={active ? "default" : "outline"}
                   onClick={() => setSelectedCategory(category.key as CategoryFilter)}
-                  className={`flex flex-col items-center gap-3 h-auto py-6 px-4 rounded-2xl transition-all duration-300 ${
-                    active
-                      ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-xl scale-105 border-0"
-                      : "bg-white/90 hover:bg-white text-slate-700 border-0 hover:shadow-lg hover:scale-105 backdrop-blur-sm"
-                  }`}
+                  className={`flex flex-col items-center gap-3 h-auto py-6 px-4 rounded-2xl transition-all duration-300 ${active
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-xl scale-105 border-0"
+                    : "bg-white/90 hover:bg-white text-slate-700 border-0 hover:shadow-lg hover:scale-105 backdrop-blur-sm"
+                    }`}
                 >
                   <IconComponent className={`w-6 h-6 ${active ? "animate-bounce" : ""}`} />
                   <span className="text-sm font-semibold text-center leading-tight">{category.label}</span>
@@ -973,7 +1067,9 @@ const VideoBlogPage = () => {
 
                 // ── Video card ──
                 if (item.type === "video") {
-                  const thumb = tempThumbnails[item.id] || item.thumbnail
+                  const thumb =
+                    tempThumbnails[item.id] ||
+                    item.thumbnail
                   return (
                     <Card key={item.id} className={cardBase} onClick={() => openModal(item, globalIndex)}>
                       <div className="group relative overflow-hidden h-52 bg-slate-900">
@@ -982,6 +1078,9 @@ const VideoBlogPage = () => {
                             src={thumb}
                             alt={item.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            onError={(e) => {
+                              e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                            }}
                           />
                         ) : item.videoUrl && item.videoUrl !== "#" ? (
                           <video
@@ -991,12 +1090,18 @@ const VideoBlogPage = () => {
                             playsInline
                             preload="metadata"
                             onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                            onError={(e) => {
+                              e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                            }}
                           />
                         ) : (
                           <img
-                            src="/placeholder.svg"
+                            src={getPlaceholderThumbnail(item.title)}
                             alt={item.title}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                            }}
                           />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
@@ -1047,54 +1152,66 @@ const VideoBlogPage = () => {
 
                 // ── Blog card ──
                 if (item.type === "blog") {
-                  // Determine card preview: real thumbnail image → <img>; video with no thumbnail → <video> for first-frame; photo → image_url
                   const hasRealThumb = !!item.thumbnail
                   const useVideoPreview = item.media_type === "video" && !hasRealThumb && !!item.video_poster
                   const imgSrc = item.media_type === "photo"
                     ? (item.image_url || item.thumbnail)
                     : hasRealThumb ? item.thumbnail : null
-                  const hasMediaPreview = !!imgSrc || useVideoPreview
+                  const thumb =
+                    tempThumbnails[item.id] ||
+                    item.thumbnail ||
+                    (useVideoPreview ? item.video_poster : imgSrc)
 
                   return (
                     <Card key={item.id} className={cardBase} onClick={() => openModal(item, globalIndex)}>
-                      {hasMediaPreview && (() => {
-                            const thumb = tempThumbnails[item.id] || item.thumbnail || (useVideoPreview ? item.video_poster : imgSrc)
-                            return (
-                              <div className="group relative overflow-hidden h-52 bg-slate-900">
-                                {thumb ? (
-                                  <img src={thumb} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                ) : useVideoPreview ? (
-                                  <video
-                                    src={item.video_poster}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                    muted
-                                    playsInline
-                                    preload="metadata"
-                                    onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
-                                  />
-                                ) : null}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                {item.media_type === "video" && (
-                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                    <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl">
-                                      <Play className="w-6 h-6 text-cyan-500 translate-x-0.5" fill="currentColor" />
-                                    </div>
-                                  </div>
-                                )}
-                                {/* Top-right: content type badge */}
-                                <span className={`absolute top-3 right-3 inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${
-                                  item.media_type === "video"
-                                    ? "bg-slate-900/90"
-                                    : "bg-gradient-to-r from-cyan-500 to-blue-600"
-                                }`}>
-                                  {item.media_type === "video"
-                                    ? <><Video className="w-3 h-3" /> Blog</>
-                                    : <><ImageIcon className="w-3 h-3" /> Blog</>
-                                  }
-                                </span>
+                      {(() => {
+                        return (
+                          <div className="group relative overflow-hidden h-52 bg-slate-900">
+                            {thumb ? (
+                              <img src={thumb} alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                onError={(e) => {
+                                  e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                                }}
+                              />
+                            ) : useVideoPreview ? (
+                              <video
+                                src={item.video_poster}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                muted
+                                playsInline
+                                preload="metadata"
+                                onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                              />
+                            ) : (
+                              <img src={getPlaceholderThumbnail(item.title)} alt={item.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = getPlaceholderThumbnail(item.title)
+                                }}
+                              />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                            {item.media_type === "video" && (
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                                <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl">
+                                  <Play className="w-6 h-6 text-cyan-500 translate-x-0.5" fill="currentColor" />
+                                </div>
                               </div>
-                            )
-                          })()}
+                            )}
+                            {/* Top-right: content type badge */}
+                            <span className={`absolute top-3 right-3 inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${item.media_type === "video"
+                              ? "bg-slate-900/90"
+                              : "bg-gradient-to-r from-cyan-500 to-blue-600"
+                              }`}>
+                              {item.media_type === "video"
+                                ? <><Video className="w-3 h-3" /> Blog</>
+                                : <><ImageIcon className="w-3 h-3" /> Blog</>
+                              }
+                            </span>
+                          </div>
+                        )
+                      })()}
                       <CardContent className="p-6 flex flex-col flex-1">
                         <Badge className={`mb-4 text-sm font-medium rounded-full px-3 py-1 self-start border-0 ${getCategoryColor(item.category)}`}>
                           {getCategoryLabel(item.category)}
