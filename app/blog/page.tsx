@@ -103,6 +103,60 @@ const formatNumber = (num: number) => {
   return num.toString()
 }
 
+const PhotoCard = ({ item, className, onClick }: { item: PhotoPost; className: string; onClick: () => void }) => {
+  const [carouselIndex, setCarouselIndex] = useState(0)
+
+  useEffect(() => {
+    setCarouselIndex(0)
+  }, [item.id])
+
+  const imageSources = item.images?.length ? item.images : [item.image_url || "/placeholder.svg"]
+  const currentImage = imageSources[carouselIndex] || imageSources[0]
+
+  return (
+    <Card key={item.id} className={className} onClick={onClick}>
+      <div className="group relative overflow-hidden h-52 bg-slate-900">
+        <img
+          src={currentImage}
+          alt={item.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+
+        {imageSources.length > 1 && (
+          <> 
+            <span className="absolute bottom-3 right-3 bg-black/70 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+              {carouselIndex + 1}/{imageSources.length}
+            </span>
+          </>
+        )}
+
+        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+          <ImageIcon className="w-3 h-3" /> Photo
+        </span>
+      </div>
+
+      <CardContent className="p-6 flex flex-col flex-1">
+        <Badge className={`mb-4 text-sm font-medium rounded-full px-3 py-1 self-start border-0 ${getCategoryColor(item.category)}`}>
+          {getCategoryLabel(item.category)}
+        </Badge>
+        <h3 className="font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-cyan-600 transition-colors text-xl leading-tight">
+          {item.title}
+        </h3>
+        <p className="text-slate-600 mb-4 line-clamp-3 text-sm leading-relaxed flex-1">
+          {item.description}
+        </p>
+        <div className="flex items-center justify-between text-sm text-slate-500 mt-auto pt-4 border-t border-slate-100">
+          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDateShort(item.created_at)}</span>
+          <span className="inline-flex items-center gap-1 text-slate-500 text-xs">
+            {imageSources.length} photo{imageSources.length > 1 ? "s" : ""}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Modal Component ──────────────────────────────────────────────────────────
 
 interface ContentModalProps {
@@ -283,13 +337,8 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                       <ChevronRight className="w-5 h-5" />
                     </button>
 
-                    {/* Counter pill */}
-                    <span className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      {carouselIndex + 1} / {item.images?.length}
-                    </span>
-
                     {/* Dot indicators */}
-                    <div className="absolute bottom-3 right-4 flex items-center gap-1.5">
+                    <div className="absolute bottom-3 left-4 flex items-center gap-1.5">
                       {item.images?.map((_, idx) => (
                         <button
                           key={idx}
@@ -298,6 +347,19 @@ const ContentModal = ({ item, onClose, onPrev, onNext, hasPrev, hasNext }: Conte
                           aria-label={`Go to photo ${idx + 1}`}
                         />
                       ))}
+                    </div>
+
+                    {/* Bottom-right counter + quick next button */}
+                    <div className="absolute bottom-3 right-4 flex items-center gap-2 bg-black/70 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      <span>{carouselIndex + 1} / {item.images?.length}</span>
+                      <button
+                        onClick={() => setCarouselIndex((i) => Math.min((item.images?.length ?? 1) - 1, i + 1))}
+                        disabled={carouselIndex === (item.images?.length ?? 1) - 1}
+                        className="rounded-full bg-white/10 hover:bg-white/20 p-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Next photo"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </>
                 )}
@@ -436,6 +498,7 @@ const VideoBlogPage = () => {
   const [videos, setVideos] = useState<VideoPost[]>([])
   const [photos, setPhotos] = useState<PhotoPost[]>([])
   const [blogs, setBlogs] = useState<BlogPost[]>([])
+  const [tempThumbnails, setTempThumbnails] = useState<Record<string, string>>({})
   const [allContent, setAllContent] = useState<ContentItem[]>([])
   const [filteredContent, setFilteredContent] = useState<ContentItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all")
@@ -448,6 +511,100 @@ const VideoBlogPage = () => {
   const [selectedIndex, setSelectedIndex] = useState<number>(-1)
 
   const videosPerPage = 12
+
+  // Generate a temporary thumbnail (data URL) from a remote video URL by capturing a short frame.
+  const generateVideoThumbnail = async (url: string): Promise<string | null> => {
+    if (!url || url === "#" || typeof document === "undefined") return null
+    return new Promise((resolve) => {
+      const video = document.createElement("video")
+      let settled = false
+      const cleanup = () => {
+        try { video.pause() } catch (e) {}
+        video.src = ""
+        video.remove()
+      }
+
+      const finish = (dataUrl: string | null) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        resolve(dataUrl)
+      }
+
+      video.crossOrigin = "anonymous"
+      video.muted = true
+      video.playsInline = true
+      video.preload = "auto"
+      video.src = url
+
+      const onLoadedData = () => {
+        try {
+          // Seek slightly into the video to avoid black frames
+          video.currentTime = Math.min(0.1, (video.duration || 0))
+        } catch (e) {
+          finish(null)
+        }
+      }
+
+      const onSeeked = () => {
+        try {
+          const w = video.videoWidth || 640
+          const h = video.videoHeight || 360
+          const canvas = document.createElement("canvas")
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext("2d")
+          if (!ctx) return finish(null)
+          ctx.drawImage(video, 0, 0, w, h)
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8)
+          finish(dataUrl)
+        } catch (e) {
+          finish(null)
+        }
+      }
+
+      const onError = () => finish(null)
+
+      video.addEventListener("loadeddata", onLoadedData)
+      video.addEventListener("seeked", onSeeked)
+      video.addEventListener("error", onError)
+
+      // Start loading
+      try { video.load() } catch (e) { finish(null) }
+
+      // Safety timeout
+      setTimeout(() => finish(null), 3500)
+    })
+  }
+
+  // Populate temporary thumbnails for videos (videos list and blog posts without thumbnails)
+  useEffect(() => {
+    const pending: Array<Promise<void>> = []
+
+    const ensureThumbFor = async (id: string, src?: string) => {
+      if (!id || !src) return
+      if (tempThumbnails[id]) return
+      const data = await generateVideoThumbnail(src)
+      if (data) setTempThumbnails((s) => ({ ...s, [id]: data }))
+    }
+
+    // Videos array
+    videos.forEach((v) => {
+      if ((!v.thumbnail || v.thumbnail === "/video-thumbnail.png") && v.videoUrl && v.videoUrl !== "#") {
+        pending.push(ensureThumbFor(v.id, v.videoUrl))
+      }
+    })
+
+    // Blog video posts
+    blogs.forEach((b) => {
+      const needs = !b.thumbnail && (b.video_poster || b.video_url)
+      const src = b.video_poster || b.video_url
+      if (needs && src) pending.push(ensureThumbFor(b.id, src))
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    Promise.all(pending).catch(() => {})
+  }, [videos, blogs, tempThumbnails])
 
   const openModal = useCallback((item: ContentItem, index: number) => {
     setSelectedItem(item)
@@ -519,9 +676,9 @@ const VideoBlogPage = () => {
             const rawImages: string[] = Array.isArray(photo.images) && photo.images.length > 0
               ? photo.images
               : photo.image_url ? [photo.image_url] : []
-            const images = rawImages.map((url: string) =>
+            const images = Array.from(new Set(rawImages.map((url: string) =>
               url.startsWith("http") ? url : `${base}${url}`
-            )
+            )))
             const firstImage = images[0] || "/placeholder.svg"
             return {
               id: photo.id.toString(),
@@ -538,6 +695,25 @@ const VideoBlogPage = () => {
               updated_at: photo.updated_at || new Date().toISOString(),
             }
           })
+
+        const groupedPhotos: PhotoPost[] = Object.values(
+          transformedPhotos.reduce((acc, photo) => {
+            const groupKey = `${photo.title}|${photo.description}|${photo.category}|${photo.badge}`
+            if (!acc[groupKey]) {
+              acc[groupKey] = { ...photo, images: [...photo.images] }
+            } else {
+              const existing = acc[groupKey]
+              acc[groupKey] = {
+                ...existing,
+                images: Array.from(new Set([...existing.images, ...photo.images])),
+                image_url: existing.image_url || photo.image_url,
+                updated_at: existing.updated_at >= photo.updated_at ? existing.updated_at : photo.updated_at,
+                created_at: existing.created_at >= photo.created_at ? existing.created_at : photo.created_at,
+              }
+            }
+            return acc
+          }, {} as Record<string, PhotoPost>)
+        )
 
         const transformedBlogs: BlogPost[] = (blogsData.blogs || blogsData || [])
           .filter((b: any) => b.status === "published")
@@ -565,7 +741,7 @@ const VideoBlogPage = () => {
           })
 
         setVideos(transformedVideos)
-        setPhotos(transformedPhotos)
+        setPhotos(groupedPhotos)
         setBlogs(transformedBlogs)
       } catch (err) {
         console.error("[v0] Error fetching content:", err)
@@ -688,35 +864,51 @@ const VideoBlogPage = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {featuredVideos.map((video, index) => (
-                <Card
-                  key={video.id}
-                  className={`group cursor-pointer hover:shadow-2xl hover:-translate-y-3 transition-all duration-700 border-0 overflow-hidden bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl ${index === 0 ? "lg:col-span-8" : "lg:col-span-4"}`}
-                  onClick={() => {
-                    const globalIndex = filteredContent.findIndex((i) => i.id === video.id && i.type === "video")
-                    openModal({ ...video, type: "video" }, globalIndex)
-                  }}
-                >
-                  <div className="relative overflow-hidden">
-                    <img src={video.thumbnail || "/placeholder.svg"} alt={video.title} className={`w-full object-cover group-hover:scale-110 transition-transform duration-700 ${index === 0 ? "h-96" : "h-56"}`} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 bg-white/95 rounded-full flex items-center justify-center group-hover:scale-125 group-hover:bg-cyan-500 group-hover:text-white transition-all duration-500 shadow-2xl">
-                        <Play className="w-8 h-8 translate-x-0.5" fill="currentColor" />
+              {featuredVideos.map((video, index) => {
+                const thumb = tempThumbnails[video.id] || video.thumbnail
+                return (
+                  <Card
+                    key={video.id}
+                    className={`group cursor-pointer hover:shadow-2xl hover:-translate-y-3 transition-all duration-700 border-0 overflow-hidden bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl ${index === 0 ? "lg:col-span-8" : "lg:col-span-4"}`}
+                    onClick={() => {
+                      const globalIndex = filteredContent.findIndex((i) => i.id === video.id && i.type === "video")
+                      openModal({ ...video, type: "video" }, globalIndex)
+                    }}
+                  >
+                    <div className="relative overflow-hidden">
+                      {thumb ? (
+                        <img src={thumb} alt={video.title} className={`w-full object-cover group-hover:scale-110 transition-transform duration-700 ${index === 0 ? "h-96" : "h-56"}`} />
+                      ) : video.videoUrl && video.videoUrl !== "#" ? (
+                        <video
+                          src={video.videoUrl}
+                          className={`w-full object-cover group-hover:scale-110 transition-transform duration-700 ${index === 0 ? "h-96" : "h-56"}`}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                        />
+                      ) : (
+                        <img src="/placeholder.svg" alt={video.title} className={`w-full object-cover ${index === 0 ? "h-96" : "h-56"}`} />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 bg-white/95 rounded-full flex items-center justify-center group-hover:scale-125 group-hover:bg-cyan-500 group-hover:text-white transition-all duration-500 shadow-2xl">
+                          <Play className="w-8 h-8 translate-x-0.5" fill="currentColor" />
+                        </div>
+                      </div>
+                      <Badge className="absolute top-6 left-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 font-bold px-4 py-2 rounded-full shadow-lg">⭐ Featured</Badge>
+                      <Badge className="absolute bottom-6 right-6 bg-black/90 text-white border-0 px-3 py-1 rounded-full">{video.duration}</Badge>
+                      <div className="absolute bottom-6 left-6 text-white">
+                        <h3 className={`font-bold mb-3 ${index === 0 ? "text-3xl" : "text-xl"}`}>{video.title}</h3>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"><Eye className="w-4 h-4" />{formatNumber(video.views)}</span>
+                          <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"><Heart className="w-4 h-4" />{formatNumber(video.likes)}</span>
+                        </div>
                       </div>
                     </div>
-                    <Badge className="absolute top-6 left-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 font-bold px-4 py-2 rounded-full shadow-lg">⭐ Featured</Badge>
-                    <Badge className="absolute bottom-6 right-6 bg-black/90 text-white border-0 px-3 py-1 rounded-full">{video.duration}</Badge>
-                    <div className="absolute bottom-6 left-6 text-white">
-                      <h3 className={`font-bold mb-3 ${index === 0 ? "text-3xl" : "text-xl"}`}>{video.title}</h3>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"><Eye className="w-4 h-4" />{formatNumber(video.views)}</span>
-                        <span className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"><Heart className="w-4 h-4" />{formatNumber(video.likes)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                )
+              })}
             </div>
           </div>
         )}
@@ -781,14 +973,32 @@ const VideoBlogPage = () => {
 
                 // ── Video card ──
                 if (item.type === "video") {
+                  const thumb = tempThumbnails[item.id] || item.thumbnail
                   return (
                     <Card key={item.id} className={cardBase} onClick={() => openModal(item, globalIndex)}>
                       <div className="group relative overflow-hidden h-52 bg-slate-900">
-                        <img
-                          src={item.thumbnail || "/placeholder.svg"}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        ) : item.videoUrl && item.videoUrl !== "#" ? (
+                          <video
+                            src={item.videoUrl}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            muted
+                            playsInline
+                            preload="metadata"
+                            onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                          />
+                        ) : (
+                          <img
+                            src="/placeholder.svg"
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
                           <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-transform duration-300">
@@ -826,35 +1036,12 @@ const VideoBlogPage = () => {
                 // ── Photo card ──
                 if (item.type === "photo") {
                   return (
-                    <Card key={item.id} className={cardBase} onClick={() => openModal(item, globalIndex)}>
-                      <div className="group relative overflow-hidden h-52 bg-slate-900">
-                        <img
-                          src={item.image_url || "/placeholder.svg"}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                        {/* Top-right: type badge */}
-                        <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          <ImageIcon className="w-3 h-3" /> Photo
-                        </span>
-                      </div>
-                      <CardContent className="p-6 flex flex-col flex-1">
-                        <Badge className={`mb-4 text-sm font-medium rounded-full px-3 py-1 self-start border-0 ${getCategoryColor(item.category)}`}>
-                          {getCategoryLabel(item.category)}
-                        </Badge>
-                        <h3 className="font-bold text-slate-800 mb-3 line-clamp-2 group-hover:text-cyan-600 transition-colors text-xl leading-tight">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-600 mb-4 line-clamp-3 text-sm leading-relaxed flex-1">
-                          {item.description}
-                        </p>
-                        <div className="flex items-center justify-between text-sm text-slate-500 mt-auto pt-4 border-t border-slate-100">
-                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDateShort(item.created_at)}</span>
-                          <ImageIcon className="w-4 h-4 text-cyan-500" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <PhotoCard
+                      key={item.id}
+                      item={item}
+                      className={cardBase}
+                      onClick={() => openModal(item, globalIndex)}
+                    />
                   )
                 }
 
@@ -870,41 +1057,44 @@ const VideoBlogPage = () => {
 
                   return (
                     <Card key={item.id} className={cardBase} onClick={() => openModal(item, globalIndex)}>
-                      {hasMediaPreview && (
-                        <div className="group relative overflow-hidden h-52 bg-slate-900">
-                          {useVideoPreview ? (
-                            <video
-                              src={item.video_poster}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                              muted
-                              playsInline
-                              preload="metadata"
-                              onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
-                            />
-                          ) : (
-                            <img src={imgSrc!} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                          {item.media_type === "video" && (
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                              <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl">
-                                <Play className="w-6 h-6 text-cyan-500 translate-x-0.5" fill="currentColor" />
+                      {hasMediaPreview && (() => {
+                            const thumb = tempThumbnails[item.id] || item.thumbnail || (useVideoPreview ? item.video_poster : imgSrc)
+                            return (
+                              <div className="group relative overflow-hidden h-52 bg-slate-900">
+                                {thumb ? (
+                                  <img src={thumb} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                ) : useVideoPreview ? (
+                                  <video
+                                    src={item.video_poster}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    muted
+                                    playsInline
+                                    preload="metadata"
+                                    onLoadedMetadata={(e) => { (e.target as HTMLVideoElement).currentTime = 0.1 }}
+                                  />
+                                ) : null}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                {item.media_type === "video" && (
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                                    <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl">
+                                      <Play className="w-6 h-6 text-cyan-500 translate-x-0.5" fill="currentColor" />
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Top-right: content type badge */}
+                                <span className={`absolute top-3 right-3 inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                  item.media_type === "video"
+                                    ? "bg-slate-900/90"
+                                    : "bg-gradient-to-r from-cyan-500 to-blue-600"
+                                }`}>
+                                  {item.media_type === "video"
+                                    ? <><Video className="w-3 h-3" /> Blog</>
+                                    : <><ImageIcon className="w-3 h-3" /> Blog</>
+                                  }
+                                </span>
                               </div>
-                            </div>
-                          )}
-                          {/* Top-right: content type badge */}
-                          <span className={`absolute top-3 right-3 inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${
-                            item.media_type === "video"
-                              ? "bg-slate-900/90"
-                              : "bg-gradient-to-r from-cyan-500 to-blue-600"
-                          }`}>
-                            {item.media_type === "video"
-                              ? <><Video className="w-3 h-3" /> Blog</>
-                              : <><ImageIcon className="w-3 h-3" /> Blog</>
-                            }
-                          </span>
-                        </div>
-                      )}
+                            )
+                          })()}
                       <CardContent className="p-6 flex flex-col flex-1">
                         <Badge className={`mb-4 text-sm font-medium rounded-full px-3 py-1 self-start border-0 ${getCategoryColor(item.category)}`}>
                           {getCategoryLabel(item.category)}
