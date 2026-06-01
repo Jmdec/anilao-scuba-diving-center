@@ -94,11 +94,78 @@ export default function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [apiVideos, setApiVideos] = useState<VideoPost[]>([])
+  const [videoThumbnails, setVideoThumbnails] = useState<Record<string, string>>({})
   const [isLoadingVideos, setIsLoadingVideos] = useState(true)
   const [videoError, setVideoError] = useState<string | null>(null)
   const [apiPhotos, setApiPhotos] = useState<any[]>([])
   const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
   const [photoError, setPhotoError] = useState<string | null>(null)
+
+  const generateVideoThumbnail = async (url: string): Promise<string | null> => {
+    if (typeof document === "undefined" || !url || url === "#") return null
+
+    return new Promise((resolve) => {
+      const video = document.createElement("video")
+      let settled = false
+      const cleanup = () => {
+        video.pause()
+        video.src = ""
+        video.remove()
+      }
+
+      const finish = (dataUrl: string | null) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        resolve(dataUrl)
+      }
+
+      const onLoadedData = () => {
+        try {
+          video.currentTime = Math.min(0.1, video.duration || 0)
+        } catch (error) {
+          finish(null)
+        }
+      }
+
+      const onSeeked = () => {
+        try {
+          const w = video.videoWidth || 640
+          const h = video.videoHeight || 360
+          const canvas = document.createElement("canvas")
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext("2d")
+          if (!ctx) return finish(null)
+          ctx.drawImage(video, 0, 0, w, h)
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8)
+          finish(dataUrl)
+        } catch (error) {
+          finish(null)
+        }
+      }
+
+      const onError = () => finish(null)
+
+      video.crossOrigin = "anonymous"
+      video.muted = true
+      video.playsInline = true
+      video.preload = "auto"
+      video.src = url
+
+      video.addEventListener("loadeddata", onLoadedData)
+      video.addEventListener("seeked", onSeeked)
+      video.addEventListener("error", onError)
+
+      try {
+        video.load()
+      } catch (error) {
+        finish(null)
+      }
+
+      setTimeout(() => finish(null), 3500)
+    })
+  }
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -174,6 +241,30 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    const generateMissingThumbnails = async () => {
+      const requests: Promise<void>[] = []
+
+      apiVideos.forEach((video) => {
+        if (!video.thumbnail && video.videoUrl && video.videoUrl !== "#" && !videoThumbnails[video.id]) {
+          requests.push(
+            generateVideoThumbnail(video.videoUrl).then((dataUrl) => {
+              if (dataUrl) {
+                setVideoThumbnails((current) => ({ ...current, [video.id]: dataUrl }))
+              }
+            })
+          )
+        }
+      })
+
+      if (requests.length > 0) {
+        await Promise.all(requests).catch(() => {})
+      }
+    }
+
+    generateMissingThumbnails()
+  }, [apiVideos, videoThumbnails])
+
+  useEffect(() => {
     const fetchPhotos = async () => {
       try {
         setIsLoadingPhotos(true)
@@ -243,7 +334,7 @@ export default function HomePage() {
     apiVideos.length > 0
       ? apiVideos.map((video) => ({
           src: video.videoUrl,
-          poster: video.thumbnail, // ✅ can be null — no forced fallback
+          poster: video.thumbnail ?? videoThumbnails[video.id] ?? "/underwater-diving-video-thumbnail-with-diver-explo.png",
           title: video.title,
           description: video.description,
           badge: video.category
@@ -443,7 +534,7 @@ export default function HomePage() {
       <BubbleAnimation />
 
       {/* Video Hero Section */}
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="relative h-[60vh] sm:h-[75vh] md:h-screen w-full overflow-hidden">
         <video
           autoPlay
           muted
@@ -548,11 +639,14 @@ export default function HomePage() {
 
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20 group hover:shadow-primary/20 transition-all duration-500">
                   <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
-                    <img
-                      src={imageItems[currentImageIndex].src || "/placeholder.svg"}
-                      alt={imageItems[currentImageIndex].title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
+                      <img
+                        src={imageItems[currentImageIndex].src || "/placeholder.svg"}
+                        alt={imageItems[currentImageIndex].title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
+                      />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                     <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300 group/btn">
                       <ChevronLeft className="h-5 w-5 text-foreground group-hover/btn:text-primary" />
@@ -568,16 +662,16 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
+                    <div className="flex items-center justify-center gap-3 overflow-x-auto px-2">
                       {imageItems.map((item, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
                           className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 ${index === currentImageIndex ? "border-primary scale-110 shadow-lg shadow-primary/30" : "border-border hover:border-primary/50 hover:scale-105"}`}
                         >
-                          <div className="w-16 h-10 relative">
-                            <img src={item.src || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />
+                          <div className="w-12 sm:w-16 h-8 sm:h-10 relative">
+                            <img src={item.src || "/placeholder.svg"} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                             {index === currentImageIndex && <div className="absolute inset-0 bg-primary/20" />}
                           </div>
                         </button>
@@ -617,7 +711,7 @@ export default function HomePage() {
                 )}
 
                 <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-card border border-border group hover:shadow-secondary/20 transition-all duration-500">
-                  <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
+                    <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
                     {/* ✅ Main video player — always use <video>, poster is null-safe */}
                     <video
                       key={currentVideoIndex}
@@ -670,8 +764,8 @@ export default function HomePage() {
                   </div>
 
                   {/* Video Thumbnails strip */}
-                  <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
+                    <div className="flex items-center justify-center gap-3 overflow-x-auto px-2">
                       {videoItems.map((item, index) => (
                         <button
                           key={index}
@@ -679,9 +773,9 @@ export default function HomePage() {
                           className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 ${index === currentVideoIndex ? "border-teal-300 scale-110 shadow-lg shadow-teal-300/30" : "border-border hover:border-teal-300/50 hover:scale-105"}`}
                         >
                           {/* ✅ Only render img if poster exists, otherwise show plain play icon */}
-                          <div className="w-16 h-10 relative bg-slate-800 flex items-center justify-center">
+                          <div className="w-12 sm:w-16 h-8 sm:h-10 relative bg-slate-800 flex items-center justify-center">
                             {item.poster ? (
-                              <img src={item.poster} alt={item.title} className="w-full h-full object-cover" />
+                              <img src={item.poster} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                             ) : (
                               <Video className="h-5 w-5 text-teal-400 opacity-70" />
                             )}
@@ -840,7 +934,10 @@ export default function HomePage() {
                       <img
                         src={getImageUrl(site.image) || "/placeholder.svg"}
                         alt={site.name}
-                            className="h-40 sm:h-44 md:h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
+                        className="h-40 sm:h-44 md:h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                     </div>
@@ -998,4 +1095,3 @@ export default function HomePage() {
     </div>
   )
 }
-//deployment
