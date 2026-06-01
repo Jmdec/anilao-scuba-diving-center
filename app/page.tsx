@@ -257,7 +257,7 @@ export default function HomePage() {
       })
 
       if (requests.length > 0) {
-        await Promise.all(requests).catch(() => {})
+        await Promise.all(requests).catch(() => { })
       }
     }
 
@@ -333,50 +333,50 @@ export default function HomePage() {
   const videoItems =
     apiVideos.length > 0
       ? apiVideos.map((video) => ({
-          src: video.videoUrl,
-          poster: video.thumbnail ?? videoThumbnails[video.id] ?? "/underwater-diving-video-thumbnail-with-diver-explo.png",
-          title: video.title,
-          description: video.description,
-          badge: video.category
-            .split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" "),
-          duration: video.duration,
-          views: video.views,
-          likes: video.likes,
-        }))
+        src: video.videoUrl,
+        poster: video.thumbnail ?? videoThumbnails[video.id] ?? "/underwater-diving-video-thumbnail-with-diver-explo.png",
+        title: video.title,
+        description: video.description,
+        badge: video.category
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+        duration: video.duration,
+        views: video.views,
+        likes: video.likes,
+      }))
       : [
-          {
-            src: "/IMG_9294.MP4",
-            poster: "/underwater-diving-video-thumbnail-with-diver-explo.png",
-            title: "Dive Into Adventure",
-            description: "Experience the thrill of underwater exploration",
-            badge: "Live Experience",
-            duration: "2:30",
-            views: 1200,
-            likes: 89,
-          },
-          {
-            src: "/underwater-diving-video-thumbnail.png",
-            poster: "/diving-video-thumbnail-with-coral-reef.png",
-            title: "Deep Sea Discovery",
-            description: "Journey into the depths of Anilao's waters",
-            badge: "Deep Dive",
-            duration: "3:45",
-            views: 850,
-            likes: 67,
-          },
-          {
-            src: "/scuba-diving-video-preview.png",
-            poster: "/scuba-diver-exploring-coral-reef.png",
-            title: "Marine Life Encounters",
-            description: "Get up close with incredible sea creatures",
-            badge: "Wildlife",
-            duration: "4:12",
-            views: 2100,
-            likes: 156,
-          },
-        ]
+        {
+          src: "/IMG_9294.MP4",
+          poster: "/underwater-diving-video-thumbnail-with-diver-explo.png",
+          title: "Dive Into Adventure",
+          description: "Experience the thrill of underwater exploration",
+          badge: "Live Experience",
+          duration: "2:30",
+          views: 1200,
+          likes: 89,
+        },
+        {
+          src: "/underwater-diving-video-thumbnail.png",
+          poster: "/diving-video-thumbnail-with-coral-reef.png",
+          title: "Deep Sea Discovery",
+          description: "Journey into the depths of Anilao's waters",
+          badge: "Deep Dive",
+          duration: "3:45",
+          views: 850,
+          likes: 67,
+        },
+        {
+          src: "/scuba-diving-video-preview.png",
+          poster: "/scuba-diver-exploring-coral-reef.png",
+          title: "Marine Life Encounters",
+          description: "Get up close with incredible sea creatures",
+          badge: "Wildlife",
+          duration: "4:12",
+          views: 2100,
+          likes: 156,
+        },
+      ]
 
   const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % imageItems.length)
   const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + imageItems.length) % imageItems.length)
@@ -534,185 +534,257 @@ export default function HomePage() {
       <BubbleAnimation />
 
       {/* Video Hero Section */}
-      <section className="relative h-[60vh] sm:h-[75vh] md:h-screen w-full overflow-hidden">
+      <section className="relative min-h-[700px] sm:min-h-[800px] lg:h-screen w-full overflow-hidden">
         <video
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover scale-105 lg:scale-100"
           poster="/underwater-coral-reef-anilao-diving.png"
         >
           <source src="/IMG_9294.MP4" type="video/webm" />
           <source src="/IMG_9294.MP4" type="video/mp4" />
-          <img src="/underwater-coral-reef-anilao-diving.png" alt="Underwater coral reef in Anilao" className="w-full h-full object-cover" />
+          <img
+            src="/underwater-coral-reef-anilao-diving.png"
+            alt="Underwater coral reef in Anilao"
+            className="w-full h-full object-cover"
+          />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-blue-900/40 to-teal-900/60" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-teal-900/80 to-transparent" />
 
-        <div className="relative z-10 h-full flex items-center justify-center">
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-blue-900/40 to-teal-900/60" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-t from-teal-900/80 to-transparent" />
+
+        <div className="relative z-10 min-h-[700px] sm:min-h-[800px] lg:h-full flex items-center justify-center py-20 lg:py-0">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
             <div className="wave-animation">
-              <div className="flex items-center justify-center mb-6">
-                <Sparkles className="h-8 w-8 text-teal-300 mr-3 animate-pulse" />
-                <span className="text-teal-200 text-sm sm:text-lg font-medium tracking-wider uppercase bg-slate-900/30 px-3 py-2 sm:px-4 rounded-full backdrop-blur-sm border border-teal-400/30">
+              {/* Top Badge */}
+              <div className="flex items-center justify-center mb-4 sm:mb-6">
+                <Sparkles className="hidden sm:block h-6 w-6 lg:h-8 lg:w-8 text-teal-300 mr-3 animate-pulse" />
+
+                <span className="text-xs sm:text-sm lg:text-lg font-medium tracking-wider uppercase bg-slate-900/30 px-3 py-2 sm:px-4 rounded-full backdrop-blur-sm border border-teal-400/30 text-teal-200">
                   World-Class Diving Experience
                 </span>
-                <Sparkles className="h-8 w-8 text-teal-300 ml-3 animate-pulse" />
+
+                <Sparkles className="hidden sm:block h-6 w-6 lg:h-8 lg:w-8 text-teal-300 ml-3 animate-pulse" />
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 sm:mb-8 leading-tight drop-shadow-2xl px-2">
+
+              {/* Heading */}
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-4 sm:mb-6 lg:mb-8 leading-[1.1] drop-shadow-2xl px-2">
                 <span className="block sm:inline">Discover the</span>{" "}
                 <span className="block sm:inline">Underwater World of</span>{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 relative block sm:inline">
                   Anilao
+
                   <div className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400 rounded-full blur-sm"></div>
                 </span>
               </h1>
             </div>
-            <p className="text-lg sm:text-xl lg:text-2xl xl:text-3xl text-teal-100 max-w-4xl mx-auto mb-8 sm:mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-teal-400/20">
-              Experience world-class diving with professional PADI certification courses and luxurious accommodation at
-              the heart of the Philippines' diving capital.
+
+            {/* Description */}
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-teal-100 max-w-4xl mx-auto mb-8 sm:mb-10 lg:mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-teal-400/20">
+              Experience world-class diving with professional PADI certification
+              courses and luxurious accommodation at the heart of the Philippines'
+              diving capital.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4">
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-4 lg:gap-6 justify-center items-center px-4">
+
               <Link href="/booking">
-                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:via-cyan-700 hover:to-blue-700 text-white px-12 py-6 text-xl font-semibold shadow-2xl hover:shadow-teal-600/40 transition-all duration-300 rounded-full border-2 border-teal-300/30 backdrop-blur-sm group transform hover:scale-105">
-                  <Hotel className="mr-3 h-6 w-6 group-hover:scale-110 transition-transform" />
+                <Button
+                  size="lg"
+                  className="w-full md:w-auto min-w-[250px] bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:via-cyan-700 hover:to-blue-700 text-white px-6 sm:px-10 py-5 sm:py-6 text-base sm:text-lg lg:text-xl font-semibold shadow-2xl hover:shadow-teal-600/40 transition-all duration-300 rounded-full border-2 border-teal-300/30 backdrop-blur-sm group transform hover:scale-105"
+                >
+                  <Hotel className="mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
                   Book Your Stay
-                  <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
+
               <Link href="/certification">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-2 border-teal-300 text-teal-100 hover:bg-teal-300 hover:text-slate-900 bg-slate-900/30 backdrop-blur-sm px-12 py-6 text-xl font-semibold shadow-2xl transition-all duration-300 rounded-full group transform hover:scale-105">
-                  <GraduationCap className="mr-3 h-6 w-6 group-hover:scale-110 transition-transform" />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full md:w-auto min-w-[250px] border-2 border-teal-300 text-teal-100 hover:bg-teal-300 hover:text-slate-900 bg-slate-900/30 backdrop-blur-sm px-6 sm:px-10 py-5 sm:py-6 text-base sm:text-lg lg:text-xl font-semibold shadow-2xl transition-all duration-300 rounded-full group transform hover:scale-105"
+                >
+                  <GraduationCap className="mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
                   Get Certified
                 </Button>
               </Link>
             </div>
-            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-4 sm:gap-8 text-teal-200 px-4">
-              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20">
-                <Award className="h-4 sm:h-5 w-4 sm:w-5 text-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">PADI 5-Star Resort</span>
+
+            {/* Stats */}
+            <div className="mt-8 sm:mt-10 lg:mt-12 flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6 text-teal-200 px-4">
+
+              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
+                <Award className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300" />
+                <span className="text-xs sm:text-sm font-medium">
+                  PADI 5-Star Resort
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20">
-                <Users className="h-4 sm:h-5 w-4 sm:w-5 text-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">2000+ Happy Divers</span>
+
+              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300" />
+                <span className="text-xs sm:text-sm font-medium">
+                  2000+ Happy Divers
+                </span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20">
-                <Star className="h-4 sm:h-5 w-4 sm:w-5 text-teal-300 fill-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">4.9/5 Rating</span>
+
+              <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
+                <Star className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300 fill-teal-300" />
+                <span className="text-xs sm:text-sm font-medium">
+                  4.9/5 Rating
+                </span>
               </div>
+
             </div>
           </div>
         </div>
       </section>
 
       {/* Media Gallery Section */}
-      <section className="py-20 bg-gradient-to-b from-slate-900/95 via-teal-900/90 to-blue-900/95 backdrop-blur-sm relative border-t border-cyan-400/20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-slate-900/95 via-teal-900/90 to-blue-900/95 backdrop-blur-sm relative border-t border-cyan-400/20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
               Experience the{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
                 Underwater Magic
               </span>
             </h2>
-            <p className="text-xl sm:text-2xl lg:text-3xl text-teal-100 max-w-4xl mx-auto mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-6 rounded-2xl backdrop-blur-sm border border-teal-400/20">
-              Immerse yourself in the breathtaking beauty of Anilao's marine life through our stunning image gallery and
-              captivating video experiences
+
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-teal-100 max-w-4xl mx-auto mb-8 sm:mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-teal-400/20">
+              Immerse yourself in the breathtaking beauty of Anilao's marine life
+              through our stunning image gallery and captivating video experiences
             </p>
           </div>
 
           <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
-              {/* Image Slider */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-secondary/20 rounded-xl border border-secondary/30">
-                    <Camera className="h-6 w-6 text-secondary" />
+              {/* IMAGE GALLERY */}
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-secondary/20 rounded-xl border border-secondary/30">
+                    <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
                   </div>
+
                   <div>
-                    <h3 className="text-2xl font-bold text-teal-300">Photo Gallery</h3>
-                    <p className="text-md font-bold text-teal-300">Stunning underwater photography</p>
+                    <h3 className="text-xl sm:text-2xl font-bold text-teal-300">
+                      Photo Gallery
+                    </h3>
+                    <p className="text-sm sm:text-base font-bold text-teal-300">
+                      Stunning underwater photography
+                    </p>
                   </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20 group hover:shadow-primary/20 transition-all duration-500">
-                  <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
-                      <img
-                        src={imageItems[currentImageIndex].src || "/placeholder.svg"}
-                        alt={imageItems[currentImageIndex].title}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
-                      />
+                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20 group hover:shadow-primary/20 transition-all duration-500">
+
+                  <div className="relative h-52 sm:h-64 md:h-80 lg:h-[420px] overflow-hidden">
+                    <img
+                      src={imageItems[currentImageIndex].src || "/placeholder.svg"}
+                      alt={imageItems[currentImageIndex].title}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg"
+                      }}
+                    />
+
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-                    <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300 group/btn">
-                      <ChevronLeft className="h-5 w-5 text-foreground group-hover/btn:text-primary" />
+
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300"
+                    >
+                      <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300 group/btn">
-                      <ChevronRight className="h-5 w-5 text-foreground group-hover/btn:text-primary" />
+
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300"
+                    >
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <div className="absolute top-6 left-6">
-                      <div className="flex items-center gap-2 bg-primary/90 backdrop-blur-sm px-4 py-2 rounded-full border border-primary/30">
-                        <Camera className="h-4 w-4 text-primary-foreground" />
-                        <span className="text-primary-foreground font-medium text-sm">{imageItems[currentImageIndex].badge}</span>
+
+                    <div className="absolute top-3 sm:top-6 left-3 sm:left-6">
+                      <div className="flex items-center gap-2 bg-primary/90 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full border border-primary/30">
+                        <Camera className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
+                        <span className="text-primary-foreground font-medium text-xs sm:text-sm">
+                          {imageItems[currentImageIndex].badge}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                    <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-center gap-3 overflow-x-auto px-2">
+                  <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
+                    <div className="flex items-center justify-start lg:justify-center gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-2">
                       {imageItems.map((item, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
-                          className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 ${index === currentImageIndex ? "border-primary scale-110 shadow-lg shadow-primary/30" : "border-border hover:border-primary/50 hover:scale-105"}`}
+                          className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 shrink-0 ${index === currentImageIndex
+                            ? "border-primary scale-105 shadow-lg shadow-primary/30"
+                            : "border-border hover:border-primary/50"
+                            }`}
                         >
-                          <div className="w-12 sm:w-16 h-8 sm:h-10 relative">
-                            <img src={item.src || "/placeholder.svg"} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                            {index === currentImageIndex && <div className="absolute inset-0 bg-primary/20" />}
+                          <div className="w-14 sm:w-16 md:w-20 h-10 sm:h-12 relative">
+                            <img
+                              src={item.src || "/placeholder.svg"}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {index === currentImageIndex && (
+                              <div className="absolute inset-0 bg-primary/20" />
+                            )}
                           </div>
                         </button>
                       ))}
                     </div>
+
                     <div className="flex justify-center mt-4 gap-2">
                       {imageItems.map((_, index) => (
-                        <div key={index} className={`h-1 rounded-full transition-all duration-300 ${index === currentImageIndex ? "w-8 bg-primary" : "w-2 bg-border"}`} />
+                        <div
+                          key={index}
+                          className={`h-1 rounded-full transition-all duration-300 ${index === currentImageIndex
+                            ? "w-8 bg-primary"
+                            : "w-2 bg-border"
+                            }`}
+                        />
                       ))}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Video Slider */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-secondary/20 rounded-xl border border-secondary/30">
-                    <Video className="h-6 w-6 text-secondary" />
+              {/* VIDEO GALLERY */}
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="p-2 sm:p-3 bg-secondary/20 rounded-xl border border-secondary/30">
+                    <Video className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
                   </div>
+
                   <div>
-                    <h3 className="text-2xl font-bold text-teal-300">Video Gallery</h3>
-                    <p className="text-md font-bold text-teal-300">
-                      {isLoadingVideos ? "Loading videos..." : "Immersive diving experiences"}
+                    <h3 className="text-xl sm:text-2xl font-bold text-teal-300">
+                      Video Gallery
+                    </h3>
+
+                    <p className="text-sm sm:text-base font-bold text-teal-300">
+                      {isLoadingVideos
+                        ? "Loading videos..."
+                        : "Immersive diving experiences"}
                     </p>
                   </div>
                 </div>
 
-                {videoError && (
-                  <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-card border border-border p-8 text-center">
-                    <div className="text-muted-foreground mb-4">
-                      <Video className="h-12 w-12 mx-auto mb-2 opacity-50 text-teal-300" />
-                      <p className="text-teal-300">Unable to load videos from server</p>
-                      <p className="text-sm mt-2 text-teal-300">Showing sample content</p>
-                    </div>
-                  </div>
-                )}
+                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl bg-card border border-border group hover:shadow-secondary/20 transition-all duration-500">
 
-                <div className="relative overflow-hidden rounded-2xl shadow-2xl bg-card border border-border group hover:shadow-secondary/20 transition-all duration-500">
-                    <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 overflow-hidden">
-                    {/* ✅ Main video player — always use <video>, poster is null-safe */}
+                  <div className="relative h-52 sm:h-64 md:h-80 lg:h-[420px] overflow-hidden">
                     <video
                       key={currentVideoIndex}
                       autoPlay
@@ -723,38 +795,55 @@ export default function HomePage() {
                       className="w-full h-full object-cover"
                       poster={videoItems[currentVideoIndex].poster ?? undefined}
                     >
-                      <source src={videoItems[currentVideoIndex].src} type="video/mp4" />
+                      <source
+                        src={videoItems[currentVideoIndex].src}
+                        type="video/mp4"
+                      />
                     </video>
 
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none" />
 
-                    <button onClick={prevVideo} className="absolute left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300 group/btn">
-                      <ChevronLeft className="h-5 w-5 text-foreground group-hover/btn:text-teal-300" />
-                    </button>
-                    <button onClick={nextVideo} className="absolute right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300 group/btn">
-                      <ChevronRight className="h-5 w-5 text-foreground group-hover/btn:text-teal-300" />
+                    <button
+                      onClick={prevVideo}
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300"
+                    >
+                      <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
 
-                    <div className="absolute top-6 left-6 pointer-events-none">
-                      <div className="flex items-center gap-2 bg-teal-300/90 backdrop-blur-sm px-4 py-2 rounded-full border border-teal-300/30">
-                        <Video className="h-4 w-4 text-teal-foreground" />
-                        <span className="text-teal-foreground font-medium text-sm">{videoItems[currentVideoIndex].badge}</span>
+                    <button
+                      onClick={nextVideo}
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300"
+                    >
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+
+                    <div className="absolute top-3 sm:top-6 left-3 sm:left-6">
+                      <div className="flex items-center gap-2 bg-teal-300/90 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full">
+                        <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="text-xs sm:text-sm font-medium">
+                          {videoItems[currentVideoIndex].badge}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="absolute top-6 right-6 pointer-events-none">
-                      <div className="flex items-center gap-3">
+                    <div className="absolute top-3 sm:top-6 right-3 sm:right-6">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         {videoItems[currentVideoIndex].duration && (
-                          <div className="bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full">
-                            <span className="text-teal-300 text-sm font-medium">{videoItems[currentVideoIndex].duration}</span>
+                          <div className="bg-black/80 px-3 py-1 rounded-full">
+                            <span className="text-teal-300 text-xs sm:text-sm">
+                              {videoItems[currentVideoIndex].duration}
+                            </span>
                           </div>
                         )}
+
                         {videoItems[currentVideoIndex].views > 0 && (
-                          <div className="flex items-center gap-1 bg-black/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                          <div className="flex items-center gap-1 bg-black/80 px-3 py-1 rounded-full">
                             <Eye className="h-3 w-3 text-teal-300" />
-                            <span className="text-teal-300 text-sm font-medium">
+                            <span className="text-teal-300 text-xs sm:text-sm">
                               {videoItems[currentVideoIndex].views > 1000
-                                ? `${(videoItems[currentVideoIndex].views / 1000).toFixed(1)}K`
+                                ? `${(
+                                  videoItems[currentVideoIndex].views / 1000
+                                ).toFixed(1)}K`
                                 : videoItems[currentVideoIndex].views}
                             </span>
                           </div>
@@ -763,26 +852,31 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* Video Thumbnails strip */}
-                    <div className="p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-center gap-3 overflow-x-auto px-2">
+                  <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
+                    <div className="flex items-center justify-start lg:justify-center gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-2">
                       {videoItems.map((item, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentVideoIndex(index)}
-                          className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 ${index === currentVideoIndex ? "border-teal-300 scale-110 shadow-lg shadow-teal-300/30" : "border-border hover:border-teal-300/50 hover:scale-105"}`}
+                          className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 shrink-0 ${index === currentVideoIndex
+                            ? "border-teal-300 scale-105 shadow-lg shadow-teal-300/30"
+                            : "border-border hover:border-teal-300/50"
+                            }`}
                         >
-                          {/* ✅ Only render img if poster exists, otherwise show plain play icon */}
-                          <div className="w-12 sm:w-16 h-8 sm:h-10 relative bg-slate-800 flex items-center justify-center">
+                          <div className="w-14 sm:w-16 md:w-20 h-10 sm:h-12 relative bg-slate-800 flex items-center justify-center">
                             {item.poster ? (
-                              <img src={item.poster} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                              <img
+                                src={item.poster}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
-                              <Video className="h-5 w-5 text-teal-400 opacity-70" />
+                              <Video className="h-5 w-5 text-teal-400" />
                             )}
+
                             <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
                               <Play className="h-3 w-3 text-teal-300" />
                             </div>
-                            {index === currentVideoIndex && <div className="absolute inset-0 bg-teal-300/20" />}
                           </div>
                         </button>
                       ))}
@@ -790,16 +884,26 @@ export default function HomePage() {
 
                     <div className="flex justify-center mt-4 gap-2">
                       {videoItems.map((_, index) => (
-                        <div key={index} className={`h-1 rounded-full transition-all duration-300 ${index === currentVideoIndex ? "w-8 bg-teal-300" : "w-2 bg-border"}`} />
+                        <div
+                          key={index}
+                          className={`h-1 rounded-full transition-all duration-300 ${index === currentVideoIndex
+                            ? "w-8 bg-teal-300"
+                            : "w-2 bg-border"
+                            }`}
+                        />
                       ))}
                     </div>
                   </div>
+
                 </div>
               </div>
+
             </div>
           </div>
         </div>
       </section>
+
+
 
       {/* Certifications Section */}
       <section className="py-24 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm relative border-t border-teal-400/20">
@@ -934,10 +1038,7 @@ export default function HomePage() {
                       <img
                         src={getImageUrl(site.image) || "/placeholder.svg"}
                         alt={site.name}
-                        loading="lazy"
-                        decoding="async"
                         className="h-40 sm:h-44 md:h-48 w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                     </div>
@@ -1095,4 +1196,3 @@ export default function HomePage() {
     </div>
   )
 }
-//deployment
