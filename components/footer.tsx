@@ -1,6 +1,6 @@
-import { WavePattern } from "@/components/ui/wave-pattern"
-import { Facebook, Mail, Phone, MapPin, Waves } from "lucide-react"
-import { FaTiktok } from "react-icons/fa" // Import TikTok icon
+import { WavePattern } from "@/components/ui/wave-pattern";
+import { Facebook, Mail, Phone, MapPin, Waves } from "lucide-react";
+import { FaTiktok } from "react-icons/fa"; // Import TikTok icon
 export function Footer() {
   return (
     <>
@@ -21,17 +21,24 @@ export function Footer() {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-3 mb-4">
                 <div className="relative">
-                  <img src="/logo.png" alt="ASDC Logo" className="w-12 h-12 brightness-0 invert" />
+                  <img
+                    src="/logo.png"
+                    alt="ASDC Logo"
+                    className="w-12 h-12 brightness-0 invert"
+                  />
                   <div className="absolute -inset-2 bg-cyan-400/20 rounded-full blur-sm"></div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-xl text-white">ASDC Anilao</h3>
-                  <p className="text-cyan-200 font-medium">Scuba Diving Center</p>
+                  <h3 className="font-bold text-xl text-white">ASDC </h3>
+                  <p className="text-cyan-200 font-medium">
+                    Anilao Scuba Dive Center
+                  </p>
                 </div>
               </div>
               <p className="text-cyan-100 leading-relaxed mb-4 max-w-md">
-                Discover the underwater wonders of Anilao, Batangas. From vibrant coral reefs to diverse marine life,
-                we're your trusted partner for unforgettable diving adventures in the Philippines.
+                Discover the underwater wonders of Anilao, Batangas. From
+                vibrant coral reefs to diverse marine life, we're your trusted
+                partner for unforgettable diving adventures in the Philippines.
               </p>
 
               {/* Social Links */}
@@ -58,32 +65,34 @@ export function Footer() {
             </div>
 
             {/* Quick Links */}
-           <div className="mt-8">
-  <h4 className="font-semibold text-lg mb-4 text-white flex items-center gap-2">
-    <Waves className="w-5 h-5 text-cyan-400" />
-    Quick Links
-  </h4>
-  <ul className="space-y-2">
-    {[
-      { text: "Booking", href: "/booking" },
-      { text: "Certifications", href: "/certifications" },
-      { text: "Gallery", href: "/blog" },
-    ].map((item) => (
-      <li key={item.text}>
-        <a
-          href={item.href}
-          className="text-cyan-200 hover:text-white transition-colors duration-200 hover:translate-x-1 inline-block"
-        >
-          {item.text}
-        </a>
-      </li>
-    ))}
-  </ul>
-</div>
+            <div className="mt-8">
+              <h4 className="font-semibold text-lg mb-4 text-white flex items-center gap-2">
+                <Waves className="w-5 h-5 text-cyan-400" />
+                Quick Links
+              </h4>
+              <ul className="space-y-2">
+                {[
+                  { text: "Booking", href: "/booking" },
+                  { text: "Certifications", href: "/certifications" },
+                  { text: "Gallery", href: "/blog" },
+                ].map((item) => (
+                  <li key={item.text}>
+                    <a
+                      href={item.href}
+                      className="text-cyan-200 hover:text-white transition-colors duration-200 hover:translate-x-1 inline-block"
+                    >
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             {/* Contact Info */}
             <div>
-              <h4 className="font-semibold text-lg mb-4 text-white">Get in Touch</h4>
+              <h4 className="font-semibold text-lg mb-4 text-white">
+                Get in Touch
+              </h4>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-cyan-400 mt-1 flex-shrink-0" />
@@ -97,13 +106,19 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                  <a href="tel:+63" className="text-cyan-100 hover:text-white transition-colors">
+                  <a
+                    href="tel:+63"
+                    className="text-cyan-100 hover:text-white transition-colors"
+                  >
                     +63 905 435 2513
                   </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                  <a href="mailto:fgbaoin@yahoo.com" className="text-cyan-100 hover:text-white transition-colors">
+                  <a
+                    href="mailto:fgbaoin@yahoo.com"
+                    className="text-cyan-100 hover:text-white transition-colors"
+                  >
                     fgbaoin@yahoo.com
                   </a>
                 </div>
@@ -131,5 +146,5 @@ export function Footer() {
         </div>
       </footer>
     </>
-  )
+  );
 }

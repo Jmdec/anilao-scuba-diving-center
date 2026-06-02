@@ -86,7 +86,7 @@ export default function AdminLayout({
                 <div>
                   <h2 className="font-bold text-white text-lg">ASDC Admin</h2>
                   <p className="text-xs text-cyan-100 font-medium">
-                    Anilao Diving Center
+                    Anilao Scuba Dive Center
                   </p>
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default function AdminLayout({
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
                   const isSubActive = item.subitems?.some(
-                    (subitem) => pathname === subitem.href
+                    (subitem) => pathname === subitem.href,
                   );
                   const Icon = item.icon;
 
@@ -107,7 +107,7 @@ export default function AdminLayout({
                           onClick={() => setGalleryExpanded(!galleryExpanded)}
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group cursor-pointer w-full",
-                            (isActive || isSubActive || galleryExpanded)
+                            isActive || isSubActive || galleryExpanded
                               ? "bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25"
                               : "text-slate-700 hover:bg-slate-100 hover:text-cyan-700",
                           )}
@@ -115,7 +115,7 @@ export default function AdminLayout({
                           <Icon
                             className={cn(
                               "w-5 h-5 transition-transform duration-200",
-                              (isActive || isSubActive || galleryExpanded)
+                              isActive || isSubActive || galleryExpanded
                                 ? "text-white"
                                 : "text-slate-500 group-hover:text-cyan-600",
                               "group-hover:scale-110",
@@ -124,7 +124,7 @@ export default function AdminLayout({
                           <span
                             className={cn(
                               "font-medium text-sm flex-1",
-                              (isActive || isSubActive || galleryExpanded)
+                              isActive || isSubActive || galleryExpanded
                                 ? "text-white"
                                 : "group-hover:text-cyan-700",
                             )}
@@ -137,7 +137,7 @@ export default function AdminLayout({
                             <ChevronRight
                               className={cn(
                                 "w-4 h-4",
-                                (isActive || isSubActive)
+                                isActive || isSubActive
                                   ? "text-white"
                                   : "text-slate-500 group-hover:text-cyan-600",
                               )}

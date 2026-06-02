@@ -1,4 +1,4 @@
-import type React from "react"
+import type React from "react";
 import {
   SidebarProvider,
   Sidebar,
@@ -9,14 +9,14 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Home, Bed, Users, Award, Settings, BarChart3 } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/sidebar";
+import { Home, Bed, Users, Award, Settings, BarChart3 } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <SidebarProvider>
@@ -28,7 +28,7 @@ export default function AdminLayout({
             </div>
             <div>
               <h2 className="font-semibold text-cyan-900">ASDC Admin</h2>
-              <p className="text-xs text-cyan-600">Anilao Diving Center</p>
+              <p className="text-xs text-cyan-600">Anilao Scuba Dive Center</p>
             </div>
           </div>
         </SidebarHeader>
@@ -52,7 +52,10 @@ export default function AdminLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/admin/bookings" className="flex items-center gap-2">
+                <Link
+                  href="/admin/bookings"
+                  className="flex items-center gap-2"
+                >
                   <BarChart3 className="w-4 h-4" />
                   <span>Bookings</span>
                 </Link>
@@ -68,7 +71,10 @@ export default function AdminLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/admin/certificate" className="flex items-center gap-2">
+                <Link
+                  href="/admin/certificate"
+                  className="flex items-center gap-2"
+                >
                   <Award className="w-4 h-4" />
                   <span>Certifications</span>
                 </Link>
@@ -76,7 +82,10 @@ export default function AdminLayout({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link href="/admin/settings" className="flex items-center gap-2">
+                <Link
+                  href="/admin/settings"
+                  className="flex items-center gap-2"
+                >
                   <Settings className="w-4 h-4" />
                   <span>Settings</span>
                 </Link>
@@ -95,5 +104,5 @@ export default function AdminLayout({
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

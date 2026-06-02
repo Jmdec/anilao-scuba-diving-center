@@ -388,9 +388,11 @@ export function Navigation() {
             />
             <div>
               <h1 className="text-base font-bold text-white leading-tight">
-                ASDC Anilao
+                ASDC
               </h1>
-              <p className="text-xs text-sky-200/80">Scuba Diving Center</p>
+              <p className="text-xs text-sky-200/80">
+                Anilao Scuba Dive Center
+              </p>
             </div>
           </Link>
 
@@ -472,10 +474,10 @@ export function Navigation() {
                       />
                       <div>
                         <p className="text-white font-bold text-base leading-tight">
-                          ASDC Anilao
+                          ASDC
                         </p>
                         <p className="text-sky-300 text-xs">
-                          Scuba Diving Center
+                          Anilao Scuba Dive Center
                         </p>
                       </div>
                     </div>
@@ -608,10 +610,10 @@ export function Navigation() {
               />
               <div className="hidden sm:block">
                 <h1 className="text-lg sm:text-xl font-bold text-cyan-800">
-                  ASDC Anilao
+                  ASDC
                 </h1>
                 <p className="text-xs sm:text-sm text-cyan-600">
-                  Scuba Diving Center
+                  Anilao Scuba Dive Center
                 </p>
               </div>
             </Link>

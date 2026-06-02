@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ASDC Anilao Scuba Diving Center",
+  title: "ASDC Anilao Scuba Dive Center",
   description: "Book your diving adventure and PADI certifications at Anilao",
   generator: "v0.app",
   manifest: "/manifest.json",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     "scuba diving",
     "PADI",
     "Anilao",
-    "diving center",
+    "dive center",
     "certification",
     "Batangas",
     "Philippines",
@@ -50,21 +50,21 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "ASDC Anilao",
-    url: "https://anilao-scuba-diving-center.vercel.app/",
-    title: "ASDC Anilao Scuba Diving Center",
+    url: "https://anilao-scuba-dive-center.vercel.app/",
+    title: "ASDC Anilao Scuba Dive Center",
     description: "Book your diving adventure and PADI certifications at Anilao",
     images: [
       {
-        url: "https://anilao-scuba-diving-center.vercel.app/og-image.jpg",
+        url: "https://anilao-scuba-dive-center.vercel.app/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "ASDC Anilao Scuba Diving Center",
+        alt: "ASDC Anilao Scuba Dive Center",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ASDC Anilao Scuba Diving Center",
+    title: "ASDC Anilao Scuba Dive Center",
     description: "Book your diving adventure and PADI certifications at Anilao",
     images: ["https://anilao-scuba-diving-center.vercel.app/og-image.jpg"],
   },
