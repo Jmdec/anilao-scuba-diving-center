@@ -29,6 +29,7 @@ import {
   Video,
   ChevronDown,
   ChevronRight,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { Toaster } from "@/components/ui/toaster";
@@ -69,6 +70,7 @@ export default function AdminLayout({
     },
     { href: "/admin/rooms", icon: Bed, label: "Rooms" },
     { href: "/admin/testimonials", icon: Star, label: "Testimonials" },
+    { href: "/admin/about", icon: User, label: "About" },
     { href: "/admin/top-dive-site", icon: Anchor, label: "Top Dive Site" },
     // { href: "/admin/settings", icon: Settings, label: "Settings" },
   ];
@@ -258,6 +260,7 @@ export default function AdminLayout({
             <div className="flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50/50 to-cyan-50/50">
               <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm p-6">
                 {children}
+                <div id="modal-root"></div>
               </div>
             </div>
           </SidebarInset>

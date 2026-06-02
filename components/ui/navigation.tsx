@@ -30,6 +30,7 @@ const navigationItems = [
   { name: "Booking", href: "/booking", icon: Anchor },
   { name: "Certification", href: "/certification", icon: BookOpen },
   { name: "Gallery", href: "/blog", icon: Camera },
+  { name: "About", href: "/about", icon: User },
 ];
 
 export function Navigation() {

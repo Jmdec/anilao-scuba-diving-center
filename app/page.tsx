@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -30,11 +30,15 @@ import { TestimonialForm } from "@/components/testimonial-form"
 import { Footer } from "@/components/footer"
 import Link from "next/link"
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface VideoPost {
   id: string
   title: string
   description: string
-  thumbnail: string | null  // ✅ nullable
+  thumbnail: string | null
   videoUrl: string
   duration: string
   views: number
@@ -77,42 +81,413 @@ interface Certificate {
   image?: string
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared gallery sub-components
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatViews(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n)
+}
+
+function NavBtn({
+  direction,
+  onClick,
+}: {
+  direction: "prev" | "next"
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={direction === "prev" ? "Previous" : "Next"}
+      className={[
+        "absolute top-1/2 -translate-y-1/2 z-20",
+        "flex items-center justify-center rounded-full",
+        "bg-slate-900/75 hover:bg-slate-900/95",
+        "border border-teal-400/25 hover:border-teal-400/50",
+        "transition-all duration-200",
+        "w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11",
+        direction === "prev" ? "left-2 sm:left-3 md:left-4" : "right-2 sm:right-3 md:right-4",
+      ].join(" ")}
+    >
+      {direction === "prev" ? (
+        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-slate-200" />
+      ) : (
+        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-200" />
+      )}
+    </button>
+  )
+}
+
+function Dots({
+  count,
+  current,
+  color = "bg-teal-400",
+}: {
+  count: number
+  current: number
+  color?: string
+}) {
+  return (
+    <div className="flex justify-center gap-1.5 mt-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className={[
+            "h-[3px] rounded-full transition-all duration-300",
+            i === current ? `w-7 ${color}` : "w-2 bg-white/20",
+          ].join(" ")}
+        />
+      ))}
+    </div>
+  )
+}
+
+function PanelHeader({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ElementType
+  title: string
+  subtitle: string
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-4 sm:mb-5">
+      <div className="p-2 sm:p-2.5 bg-teal-400/15 rounded-xl border border-teal-400/25 shrink-0">
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300" />
+      </div>
+      <div>
+        <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-teal-300 leading-tight">
+          {title}
+        </h3>
+        <p className="text-xs sm:text-sm text-teal-300/70 mt-0.5">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Image Gallery
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ImageItem {
+  src: string
+  title: string
+  badge: string
+}
+
+function ImageGallery({ items }: { items: ImageItem[] }) {
+  const [current, setCurrent] = useState(0)
+
+  const prev = useCallback(
+    () => setCurrent((i) => (i - 1 + items.length) % items.length),
+    [items.length]
+  )
+  const next = useCallback(
+    () => setCurrent((i) => (i + 1) % items.length),
+    [items.length]
+  )
+
+  if (!items.length) return null
+
+  return (
+    <div>
+      <PanelHeader
+        icon={Camera}
+        title="Photo Gallery"
+        subtitle="Stunning underwater photography"
+      />
+
+      <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 border border-teal-400/20">
+        {/* Main image */}
+        <div className="relative w-full aspect-video overflow-hidden group">
+          <img
+            key={current}
+            src={items[current].src || "/placeholder.svg"}
+            alt={items[current].title}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.currentTarget.src = "/placeholder.svg"
+            }}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent pointer-events-none" />
+
+          <NavBtn direction="prev" onClick={prev} />
+          <NavBtn direction="next" onClick={next} />
+
+          {/* Badge */}
+          <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-10 pointer-events-none">
+            <span className="inline-flex items-center gap-1.5 bg-teal-500/90 text-white text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-full">
+              <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              {items[current].badge}
+            </span>
+          </div>
+        </div>
+
+        {/* Thumbnails */}
+        <div className="px-3 sm:px-4 pt-3 pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-teal-400/30 justify-start lg:justify-center">
+            {items.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                aria-label={`View ${item.title}`}
+                className={[
+                  "relative shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200",
+                  "w-14 h-10 sm:w-16 sm:h-11 md:w-20 md:h-[52px]",
+                  i === current
+                    ? "border-teal-400 scale-105 shadow-md shadow-teal-400/30"
+                    : "border-white/15 hover:border-teal-400/50",
+                ].join(" ")}
+              >
+                <img
+                  src={item.src || "/placeholder.svg"}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg"
+                  }}
+                />
+                {i === current && (
+                  <div className="absolute inset-0 bg-teal-400/20" />
+                )}
+              </button>
+            ))}
+          </div>
+          <Dots count={items.length} current={current} color="bg-teal-400" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Video Gallery
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface VideoItem {
+  src: string
+  poster: string | null
+  title: string
+  badge: string
+  duration?: string
+  views?: number
+}
+
+function VideoGallery({
+  items,
+  isLoading,
+}: {
+  items: VideoItem[]
+  isLoading: boolean
+}) {
+  const [current, setCurrent] = useState(0)
+
+  const prev = useCallback(
+    () => setCurrent((i) => (i - 1 + items.length) % items.length),
+    [items.length]
+  )
+  const next = useCallback(
+    () => setCurrent((i) => (i + 1) % items.length),
+    [items.length]
+  )
+
+  const item = items[current] ?? null
+
+  return (
+    <div>
+      <PanelHeader
+        icon={Video}
+        title="Video Gallery"
+        subtitle={isLoading ? "Loading videos…" : "Immersive diving experiences"}
+      />
+
+      <div className="rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 border border-teal-400/20">
+        {/* Main video */}
+        <div className="relative w-full aspect-video overflow-hidden">
+          {item && (
+            <video
+              key={current}
+              src={item.src}
+              poster={item.poster ?? undefined}
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              className="relative z-10 w-full h-full object-cover"
+            />
+          )}
+
+          {/* Gradient – pointer-events-none keeps video controls clickable */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent pointer-events-none" />
+
+          {/* Nav sits above gradient (z-20) */}
+          <NavBtn direction="prev" onClick={prev} />
+          <NavBtn direction="next" onClick={next} />
+
+          {/* Top-left badge */}
+          {item && (
+            <div className="absolute top-3 left-3 sm:top-5 sm:left-5 z-20 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 bg-teal-300/90 text-slate-900 text-[11px] sm:text-xs font-medium px-3 py-1.5 rounded-full">
+                <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {item.badge}
+              </span>
+            </div>
+          )}
+
+          {/* Top-right meta */}
+          {item && (
+            <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-20 flex flex-col sm:flex-row gap-1.5 pointer-events-none">
+              {item.duration && (
+                <span className="bg-black/75 text-teal-300 text-[11px] sm:text-xs px-2.5 py-1 rounded-full">
+                  {item.duration}
+                </span>
+              )}
+              {!!item.views && item.views > 0 && (
+                <span className="inline-flex items-center gap-1 bg-black/75 text-teal-300 text-[11px] sm:text-xs px-2.5 py-1 rounded-full">
+                  <Eye className="w-3 h-3" />
+                  {formatViews(item.views)}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Thumbnails */}
+        <div className="px-3 sm:px-4 pt-3 pb-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-teal-400/30 justify-start lg:justify-center">
+            {items.map((v, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                aria-label={`Play ${v.title}`}
+                className={[
+                  "relative shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200 bg-slate-800",
+                  "w-14 h-10 sm:w-16 sm:h-11 md:w-20 md:h-[52px]",
+                  i === current
+                    ? "border-teal-300 scale-105 shadow-md shadow-teal-300/30"
+                    : "border-white/15 hover:border-teal-300/50",
+                ].join(" ")}
+              >
+                {v.poster ? (
+                  <img
+                    src={v.poster}
+                    alt={v.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Video className="w-5 h-5 text-teal-400" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
+                  <Play className="w-3 h-3 text-teal-300 fill-teal-300" />
+                </div>
+              </button>
+            ))}
+          </div>
+          <Dots count={items.length} current={current} color="bg-teal-300" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fallback data
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FALLBACK_IMAGES: ImageItem[] = [
+  {
+    src: "/underwater-coral-reef-diving-colorful-fish.png",
+    title: "Coral Garden Paradise",
+    badge: "Coral Reef",
+  },
+  {
+    src: "/underwater-diving-scene-with-tropical-fish.png",
+    title: "Tropical Fish Haven",
+    badge: "Marine Life",
+  },
+  {
+    src: "/scuba-diver-exploring-coral-reef.png",
+    title: "Deep Reef Exploration",
+    badge: "Adventure",
+  },
+]
+
+const FALLBACK_VIDEOS: VideoItem[] = [
+  {
+    src: "/IMG_9294.MP4",
+    poster: null,
+    title: "Dive Into Adventure",
+    badge: "Live Experience",
+    duration: "2:30",
+    views: 1200,
+  },
+  {
+    src: "/IMG_9294.MP4",
+    poster: null,
+    title: "Deep Sea Discovery",
+    badge: "Deep Dive",
+    duration: "3:45",
+    views: 850,
+  },
+  {
+    src: "/IMG_9294.MP4",
+    poster: null,
+    title: "Marine Life Encounters",
+    badge: "Wildlife",
+    duration: "4:12",
+    views: 2100,
+  },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
+  // ── Dive sites ──────────────────────────────────────────────────────────────
   const [diveSites, setDiveSites] = useState<DiveSite[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [usingFallbackData, setUsingFallbackData] = useState(false)
 
+  // ── Certificates ────────────────────────────────────────────────────────────
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [certificatesLoading, setCertificatesLoading] = useState(true)
 
+  // ── Newsletter ──────────────────────────────────────────────────────────────
   const [email, setEmail] = useState("")
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [subscriptionMessage, setSubscriptionMessage] = useState("")
 
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  // ── Videos ──────────────────────────────────────────────────────────────────
   const [apiVideos, setApiVideos] = useState<VideoPost[]>([])
   const [videoThumbnails, setVideoThumbnails] = useState<Record<string, string>>({})
   const [isLoadingVideos, setIsLoadingVideos] = useState(true)
-  const [videoError, setVideoError] = useState<string | null>(null)
-  const [apiPhotos, setApiPhotos] = useState<any[]>([])
-  const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
-  const [photoError, setPhotoError] = useState<string | null>(null)
 
+  // ── Photos ──────────────────────────────────────────────────────────────────
+  const [apiPhotos, setApiPhotos] = useState<ImageItem[]>([])
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(true)
+
+  // ── Thumbnail generator ─────────────────────────────────────────────────────
   const generateVideoThumbnail = async (url: string): Promise<string | null> => {
     if (typeof document === "undefined" || !url || url === "#") return null
 
     return new Promise((resolve) => {
       const video = document.createElement("video")
       let settled = false
+
       const cleanup = () => {
         video.pause()
         video.src = ""
         video.remove()
       }
-
       const finish = (dataUrl: string | null) => {
         if (settled) return
         settled = true
@@ -120,15 +495,15 @@ export default function HomePage() {
         resolve(dataUrl)
       }
 
-      const onLoadedData = () => {
+      video.addEventListener("loadeddata", () => {
         try {
           video.currentTime = Math.min(0.1, video.duration || 0)
-        } catch (error) {
+        } catch {
           finish(null)
         }
-      }
+      })
 
-      const onSeeked = () => {
+      video.addEventListener("seeked", () => {
         try {
           const w = video.videoWidth || 640
           const h = video.videoHeight || 360
@@ -138,28 +513,22 @@ export default function HomePage() {
           const ctx = canvas.getContext("2d")
           if (!ctx) return finish(null)
           ctx.drawImage(video, 0, 0, w, h)
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.8)
-          finish(dataUrl)
-        } catch (error) {
+          finish(canvas.toDataURL("image/jpeg", 0.8))
+        } catch {
           finish(null)
         }
-      }
+      })
 
-      const onError = () => finish(null)
-
+      video.addEventListener("error", () => finish(null))
       video.crossOrigin = "anonymous"
       video.muted = true
       video.playsInline = true
       video.preload = "auto"
       video.src = url
 
-      video.addEventListener("loadeddata", onLoadedData)
-      video.addEventListener("seeked", onSeeked)
-      video.addEventListener("error", onError)
-
       try {
         video.load()
-      } catch (error) {
+      } catch {
         finish(null)
       }
 
@@ -167,12 +536,11 @@ export default function HomePage() {
     })
   }
 
+  // ── Fetch videos ────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchVideos = async () => {
       try {
         setIsLoadingVideos(true)
-        setVideoError(null)
-
         const apiUrl = process.env.NEXT_PUBLIC_API_URL
         if (!apiUrl) throw new Error("API URL not configured")
 
@@ -183,250 +551,218 @@ export default function HomePage() {
 
         const blogsData = blogsRes.ok ? await blogsRes.json() : { blogs: [] }
         const videosData = videosRes.ok ? await videosRes.json() : { videos: [] }
+        const base = apiUrl.replace("/api", "")
 
-        // Transform blogs that have a video_url attached
-        const blogsArray = (blogsData.blogs || blogsData || [])
-          .filter((blog: any) => blog.status === "published" && blog.video_url)
-          .map((blog: any) => ({
-            id: `blog-${blog.id}`,
-            title: blog.title || "Untitled",
-            description: blog.description || "",
-            thumbnail: blog.thumbnail_url
-              ? `${apiUrl.replace("/api", "")}${blog.thumbnail_url}`
-              : null, // ✅ null, no fallback image
-            videoUrl: `${apiUrl.replace("/api", "")}${blog.video_url}`,
-            duration: blog.duration || "0:00",
-            views: blog.views || 0,
-            likes: blog.likes || 0,
-            comments: blog.comments_count || 0,
-            category: blog.category || "scuba-diving",
-            publishedAt: blog.created_at || new Date().toISOString(),
-            featured: blog.featured === 1 || blog.featured === true,
+        const fromBlogs: VideoPost[] = (blogsData.blogs || blogsData || [])
+          .filter((b: any) => b.status === "published" && b.video_url)
+          .map((b: any) => ({
+            id: `blog-${b.id}`,
+            title: b.title || "Untitled",
+            description: b.description || "",
+            thumbnail: b.thumbnail_url ? `${base}${b.thumbnail_url}` : null,
+            videoUrl: `${base}${b.video_url}`,
+            duration: b.duration || "0:00",
+            views: b.views || 0,
+            likes: b.likes || 0,
+            comments: b.comments_count || 0,
+            category: b.category || "scuba-diving",
+            publishedAt: b.created_at || new Date().toISOString(),
+            featured: b.featured === 1 || b.featured === true,
           }))
 
-        // Transform uploaded videos — no thumbnail fallback
-        const videosArray = (videosData.videos || videosData || [])
-          .filter((video: any) => video.status === "published")
-          .map((video: any) => ({
-            id: `video-${video.id}`,
-            title: video.title || "Untitled Video",
-            description: video.description || "",
-            thumbnail: video.thumbnail_url
-              ? `${apiUrl.replace("/api", "")}${video.thumbnail_url}`
-              : null, // ✅ null, no fallback image
-            videoUrl: video.video_url
-              ? `${apiUrl.replace("/api", "")}${video.video_url}`
-              : "#",
-            duration: video.duration || "0:00",
-            views: video.views || 0,
-            likes: video.likes || 0,
-            comments: video.comments_count || 0,
-            category: video.category || "scuba-diving",
-            publishedAt: video.created_at || new Date().toISOString(),
-            featured: video.featured === 1 || video.featured === true,
+        const fromVideos: VideoPost[] = (videosData.videos || videosData || [])
+          .filter((v: any) => v.status === "published")
+          .map((v: any) => ({
+            id: `video-${v.id}`,
+            title: v.title || "Untitled Video",
+            description: v.description || "",
+            thumbnail: v.thumbnail_url ? `${base}${v.thumbnail_url}` : null,
+            videoUrl: v.video_url ? `${base}${v.video_url}` : "#",
+            duration: v.duration || "0:00",
+            views: v.views || 0,
+            likes: v.likes || 0,
+            comments: v.comments_count || 0,
+            category: v.category || "scuba-diving",
+            publishedAt: v.created_at || new Date().toISOString(),
+            featured: v.featured === 1 || v.featured === true,
           }))
 
-        const merged = [...videosArray, ...blogsArray]
-        console.log("[v0] Merged videos:", merged)
-        setApiVideos(merged.slice(0, 6))
+        setApiVideos([...fromVideos, ...fromBlogs].slice(0, 6))
       } catch (err) {
-        console.error("[v0] Error fetching videos:", err)
-        setVideoError(err instanceof Error ? err.message : "Failed to load videos")
+        console.error("[HomePage] Error fetching videos:", err)
       } finally {
         setIsLoadingVideos(false)
       }
     }
-
     fetchVideos()
   }, [])
 
+  // ── Generate missing thumbnails ─────────────────────────────────────────────
   useEffect(() => {
-    const generateMissingThumbnails = async () => {
-      const requests: Promise<void>[] = []
-
-      apiVideos.forEach((video) => {
-        if (!video.thumbnail && video.videoUrl && video.videoUrl !== "#" && !videoThumbnails[video.id]) {
-          requests.push(
-            generateVideoThumbnail(video.videoUrl).then((dataUrl) => {
-              if (dataUrl) {
-                setVideoThumbnails((current) => ({ ...current, [video.id]: dataUrl }))
-              }
-            })
-          )
-        }
-      })
-
-      if (requests.length > 0) {
-        await Promise.all(requests).catch(() => { })
-      }
+    const generate = async () => {
+      const requests = apiVideos
+        .filter((v) => !v.thumbnail && v.videoUrl && v.videoUrl !== "#" && !videoThumbnails[v.id])
+        .map((v) =>
+          generateVideoThumbnail(v.videoUrl).then((dataUrl) => {
+            if (dataUrl)
+              setVideoThumbnails((prev) => ({ ...prev, [v.id]: dataUrl }))
+          })
+        )
+      if (requests.length) await Promise.all(requests).catch(() => { })
     }
+    generate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiVideos])
 
-    generateMissingThumbnails()
-  }, [apiVideos, videoThumbnails])
-
+  // ── Fetch photos ────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
         setIsLoadingPhotos(true)
-        setPhotoError(null)
-
         const apiUrl = process.env.NEXT_PUBLIC_API_URL
         if (!apiUrl) throw new Error("API URL not configured")
 
-        const response = await fetch(`${apiUrl}/photos?status=published`)
-        if (!response.ok) throw new Error(`Failed to fetch photos: ${response.status}`)
+        const res = await fetch(`${apiUrl}/photos?status=published`)
+        if (!res.ok) throw new Error(`Failed to fetch photos: ${res.status}`)
 
-        const data = await response.json()
-        const photosArray = data.photos || data || []
+        const data = await res.json()
+        const base = apiUrl.replace("/api", "")
 
-        const transformedPhotos = photosArray
-          .filter((photo: any) => photo.status === "published")
-          .map((photo: any) => ({
-            src: photo.image_url
-              ? `${apiUrl.replace("/api", "")}${photo.image_url}`
+        const transformed: ImageItem[] = (data.photos || data || [])
+          .filter((p: any) => p.status === "published")
+          .map((p: any) => ({
+            src: p.image_url
+              ? `${base}${p.image_url}`
               : "/underwater-coral-reef-diving-colorful-fish.png",
-            title: photo.title || "Untitled Photo",
-            description: photo.description || "No description available",
-            badge: photo.badge || photo.category
+            title: p.title || "Untitled Photo",
+            badge: p.badge || (p.category as string)
               .split("-")
-              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
               .join(" "),
-            stats: { depth: "N/A", visibility: "N/A", difficulty: "All Levels" },
           }))
 
-        setApiPhotos(transformedPhotos)
+        setApiPhotos(transformed)
       } catch (err) {
-        console.error("[v0] Error fetching photos:", err)
-        setPhotoError(err instanceof Error ? err.message : "Failed to load photos")
+        console.error("[HomePage] Error fetching photos:", err)
       } finally {
         setIsLoadingPhotos(false)
       }
     }
-
     fetchPhotos()
   }, [])
 
-  const imageItems = apiPhotos.length > 0 ? apiPhotos : [
-    {
-      src: "/underwater-coral-reef-diving-colorful-fish.png",
-      title: "Coral Garden Paradise",
-      description: "Explore vibrant coral formations teeming with marine life",
-      badge: "Coral Reef",
-      stats: { depth: "15-25m", visibility: "30m+", difficulty: "Beginner" },
-    },
-    {
-      src: "/underwater-diving-scene-with-tropical-fish.png",
-      title: "Tropical Fish Haven",
-      description: "Swim alongside schools of colorful tropical fish",
-      badge: "Marine Life",
-      stats: { depth: "10-20m", visibility: "25m+", difficulty: "All Levels" },
-    },
-    {
-      src: "/scuba-diver-exploring-coral-reef.png",
-      title: "Deep Reef Exploration",
-      description: "Discover the mysteries of Anilao's deeper reefs",
-      badge: "Adventure",
-      stats: { depth: "20-30m", visibility: "20m+", difficulty: "Advanced" },
-    },
-  ]
+  // ── Fetch dive sites ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const fetchDiveSites = async () => {
+      try {
+        setLoading(true)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL
+        if (!apiUrl) { setUsingFallbackData(true); setLoading(false); return }
 
-  const videoItems =
+        const res = await fetch(`${apiUrl}/dive-sites?featured=1&active=1`, {
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        const data = await res.json()
+        const sites: DiveSite[] =
+          Array.isArray(data) ? data
+            : Array.isArray(data?.data) ? data.data
+              : data?.success && data?.data ? data.data
+                : []
+
+        if (sites.length) { setDiveSites(sites); setUsingFallbackData(false) }
+        else setUsingFallbackData(true)
+        setError(null)
+      } catch {
+        setUsingFallbackData(true)
+        setError(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDiveSites()
+  }, [])
+
+  // ── Fetch certificates ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      try {
+        setCertificatesLoading(true)
+        const res = await fetch("/api/certificate")
+        const data = await res.json()
+        if (res.ok && data.success) setCertificates((data.certifications || []).slice(0, 3))
+      } catch (err) {
+        console.error("Error fetching certificates:", err)
+      } finally {
+        setCertificatesLoading(false)
+      }
+    }
+    fetchCertificates()
+  }, [])
+
+  // ── Newsletter ──────────────────────────────────────────────────────────────
+  const handleNewsletterSubscription = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !email.includes("@")) {
+      setSubscriptionMessage("Please enter a valid email address")
+      return
+    }
+    setIsSubscribing(true)
+    setSubscriptionMessage("")
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSubscriptionMessage("Thank you for subscribing! Check your email for confirmation.")
+        setEmail("")
+      } else {
+        setSubscriptionMessage(data.message || "Subscription failed. Please try again.")
+      }
+    } catch {
+      setSubscriptionMessage("Network error. Please try again later.")
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
+
+  // ── Derived gallery data ────────────────────────────────────────────────────
+  const imageItems: ImageItem[] =
+    apiPhotos.length > 0 ? apiPhotos : FALLBACK_IMAGES
+
+  const videoItems: VideoItem[] =
     apiVideos.length > 0
-      ? apiVideos.map((video) => ({
-        src: video.videoUrl,
-        poster: video.thumbnail ?? videoThumbnails[video.id] ?? "/underwater-diving-video-thumbnail-with-diver-explo.png",
-        title: video.title,
-        description: video.description,
-        badge: video.category
+      ? apiVideos.map((v) => ({
+        src: v.videoUrl,
+        poster: v.thumbnail ?? videoThumbnails[v.id] ?? null,
+        title: v.title,
+        badge: v.category
           .split("-")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" "),
-        duration: video.duration,
-        views: video.views,
-        likes: video.likes,
+        duration: v.duration,
+        views: v.views,
       }))
-      : [
-        {
-          src: "/IMG_9294.MP4",
-          poster: "/underwater-diving-video-thumbnail-with-diver-explo.png",
-          title: "Dive Into Adventure",
-          description: "Experience the thrill of underwater exploration",
-          badge: "Live Experience",
-          duration: "2:30",
-          views: 1200,
-          likes: 89,
-        },
-        {
-          src: "/underwater-diving-video-thumbnail.png",
-          poster: "/diving-video-thumbnail-with-coral-reef.png",
-          title: "Deep Sea Discovery",
-          description: "Journey into the depths of Anilao's waters",
-          badge: "Deep Dive",
-          duration: "3:45",
-          views: 850,
-          likes: 67,
-        },
-        {
-          src: "/scuba-diving-video-preview.png",
-          poster: "/scuba-diver-exploring-coral-reef.png",
-          title: "Marine Life Encounters",
-          description: "Get up close with incredible sea creatures",
-          badge: "Wildlife",
-          duration: "4:12",
-          views: 2100,
-          likes: 156,
-        },
-      ]
+      : FALLBACK_VIDEOS
 
-  const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % imageItems.length)
-  const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + imageItems.length) % imageItems.length)
-  const nextVideo = () => setCurrentVideoIndex((prev) => (prev + 1) % videoItems.length)
-  const prevVideo = () => setCurrentVideoIndex((prev) => (prev - 1 + videoItems.length) % videoItems.length)
-
-  const mediaItems = [
-    {
-      type: "image",
-      src: "/underwater-coral-reef-with-colorful-fish-and-marin.png",
-      title: "Anilao's Coral Gardens",
-      description: "Home to over 300 species of marine life",
-      badge: "Marine Paradise",
-      icon: Fish,
-    },
-    {
-      type: "video",
-      src: "/IMG_9294.MP4",
-      poster: "/underwater-diving-video-thumbnail-with-diver-explo.png",
-      title: "Dive Into Adventure",
-      description: "Experience the thrill of underwater exploration",
-      badge: "Live Experience",
-      icon: Play,
-    },
-    {
-      type: "image",
-      src: "/underwater-coral-reef-anilao-diving.png",
-      title: "Crystal Clear Waters",
-      description: "Perfect visibility for underwater photography",
-      badge: "Photo Paradise",
-      icon: Eye,
-    },
-  ]
-
-  const nextMedia = () => setCurrentMediaIndex((prev) => (prev + 1) % mediaItems.length)
-  const prevMedia = () => setCurrentMediaIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length)
-
+  // ── Helpers ─────────────────────────────────────────────────────────────────
   const getImageUrl = (imagePath: string | null) => {
-    if (!imagePath) return "/underwater-coral-reef-diving.png"
+    if (!imagePath) return "/underwater-coral-reef-anilao-diving.png"
     if (imagePath.startsWith("http")) return imagePath
-    const apiUrl = process.env.NEXT_PUBLIC_IMAGE_API_URL || "http://localhost:8000"
-    return `${apiUrl}/uploads/dive-sites/${imagePath}`
+    const base = process.env.NEXT_PUBLIC_IMAGE_API_URL || "http://localhost:8000"
+    return `${base}/uploads/dive-sites/${imagePath}`
   }
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
-      case "beginner": return "bg-emerald-100 text-emerald-800 border-emerald-300 shadow-emerald-200/50"
-      case "intermediate": return "bg-amber-100 text-amber-800 border-amber-300 shadow-amber-200/50"
-      case "advanced": return "bg-rose-100 text-rose-800 border-rose-300 shadow-rose-200/50"
-      default: return "bg-slate-100 text-slate-800 border-slate-300 shadow-slate-200/50"
+      case "beginner": return "bg-emerald-100 text-emerald-800 border-emerald-300"
+      case "intermediate": return "bg-amber-100 text-amber-800 border-amber-300"
+      case "advanced": return "bg-rose-100 text-rose-800 border-rose-300"
+      default: return "bg-slate-100 text-slate-800 border-slate-300"
     }
   }
 
@@ -440,100 +776,16 @@ export default function HomePage() {
     }
   }
 
-  useEffect(() => {
-    const fetchDiveSites = async () => {
-      try {
-        setLoading(true)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL
-        if (!apiUrl) {
-          setUsingFallbackData(true)
-          setError(null)
-          setLoading(false)
-          return
-        }
-
-        const response = await fetch(`${apiUrl}/dive-sites?featured=1&active=1`, {
-          method: "GET",
-          headers: { Accept: "application/json", "Content-Type": "application/json" },
-        })
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-
-        const data = await response.json()
-        let sitesData = []
-        if (Array.isArray(data)) sitesData = data
-        else if (data.data && Array.isArray(data.data)) sitesData = data.data
-        else if (data.success && data.data) sitesData = data.data
-
-        if (sitesData.length > 0) {
-          setDiveSites(sitesData)
-          setUsingFallbackData(false)
-        } else {
-          setUsingFallbackData(true)
-        }
-        setError(null)
-      } catch (err) {
-        setUsingFallbackData(true)
-        setError(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchDiveSites()
-  }, [])
-
-  useEffect(() => {
-    const fetchCertificates = async () => {
-      try {
-        setCertificatesLoading(true)
-        const response = await fetch("/api/certificate")
-        const data = await response.json()
-        if (response.ok && data.success) {
-          setCertificates((data.certifications || []).slice(0, 3))
-        }
-      } catch (error) {
-        console.error("Error fetching certificates:", error)
-      } finally {
-        setCertificatesLoading(false)
-      }
-    }
-    fetchCertificates()
-  }, [])
-
-  const handleNewsletterSubscription = async (e: any) => {
-    e.preventDefault()
-    if (!email || !email.includes("@")) {
-      setSubscriptionMessage("Please enter a valid email address")
-      return
-    }
-    setIsSubscribing(true)
-    setSubscriptionMessage("")
-    try {
-      const response = await fetch("/api/newsletter/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setSubscriptionMessage("Thank you for subscribing! Check your email for confirmation.")
-        setEmail("")
-      } else {
-        setSubscriptionMessage(data.message || "Subscription failed. Please try again.")
-      }
-    } catch (error) {
-      setSubscriptionMessage("Network error. Please try again later.")
-    } finally {
-      setIsSubscribing(false)
-    }
-  }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen relative bg-gradient-to-b from-slate-900 via-blue-300 to-teal-300">
       <Navigation />
       <BubbleAnimation />
 
-      {/* Video Hero Section */}
+      {/* ── Hero ── */}
       <section className="relative min-h-[700px] sm:min-h-[800px] lg:h-screen w-full overflow-hidden">
         <video
           autoPlay
@@ -543,7 +795,6 @@ export default function HomePage() {
           className="absolute inset-0 w-full h-full object-cover scale-105 lg:scale-100"
           poster="/underwater-coral-reef-anilao-diving.png"
         >
-          <source src="/IMG_9294.MP4" type="video/webm" />
           <source src="/IMG_9294.MP4" type="video/mp4" />
           <img
             src="/underwater-coral-reef-anilao-diving.png"
@@ -552,47 +803,37 @@ export default function HomePage() {
           />
         </video>
 
-        {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-blue-900/40 to-teal-900/60" />
         <div className="absolute bottom-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-t from-teal-900/80 to-transparent" />
 
         <div className="relative z-10 min-h-[700px] sm:min-h-[800px] lg:h-full flex items-center justify-center py-20 lg:py-0">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-
             <div className="wave-animation">
-              {/* Top Badge */}
               <div className="flex items-center justify-center mb-4 sm:mb-6">
                 <Sparkles className="hidden sm:block h-6 w-6 lg:h-8 lg:w-8 text-teal-300 mr-3 animate-pulse" />
-
                 <span className="text-xs sm:text-sm lg:text-lg font-medium tracking-wider uppercase bg-slate-900/30 px-3 py-2 sm:px-4 rounded-full backdrop-blur-sm border border-teal-400/30 text-teal-200">
                   World-Class Diving Experience
                 </span>
-
                 <Sparkles className="hidden sm:block h-6 w-6 lg:h-8 lg:w-8 text-teal-300 ml-3 animate-pulse" />
               </div>
 
-              {/* Heading */}
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-4 sm:mb-6 lg:mb-8 leading-[1.1] drop-shadow-2xl px-2">
                 <span className="block sm:inline">Discover the</span>{" "}
                 <span className="block sm:inline">Underwater World of</span>{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 relative block sm:inline">
                   Anilao
-
-                  <div className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400 rounded-full blur-sm"></div>
+                  <div className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-1 sm:h-2 bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-400 rounded-full blur-sm" />
                 </span>
               </h1>
             </div>
 
-            {/* Description */}
             <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-teal-100 max-w-4xl mx-auto mb-8 sm:mb-10 lg:mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-teal-400/20">
               Experience world-class diving with professional PADI certification
               courses and luxurious accommodation at the heart of the Philippines'
               diving capital.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col md:flex-row gap-3 sm:gap-4 lg:gap-6 justify-center items-center px-4">
-
               <Link href="/booking">
                 <Button
                   size="lg"
@@ -616,297 +857,51 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Stats */}
             <div className="mt-8 sm:mt-10 lg:mt-12 flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6 text-teal-200 px-4">
-
               <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
                 <Award className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">
-                  PADI 5-Star Resort
-                </span>
+                <span className="text-xs sm:text-sm font-medium">PADI 5-Star Resort</span>
               </div>
-
               <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">
-                  2000+ Happy Divers
-                </span>
+                <span className="text-xs sm:text-sm font-medium">2000+ Happy Divers</span>
               </div>
-
               <div className="flex items-center gap-2 bg-slate-900/30 px-3 sm:px-4 py-2 rounded-full backdrop-blur-sm border border-teal-400/20 whitespace-nowrap">
                 <Star className="h-4 w-4 sm:h-5 sm:w-5 text-teal-300 fill-teal-300" />
-                <span className="text-xs sm:text-sm font-medium">
-                  4.9/5 Rating
-                </span>
+                <span className="text-xs sm:text-sm font-medium">4.9/5 Rating</span>
               </div>
-
             </div>
           </div>
         </div>
       </section>
 
-      {/* Media Gallery Section */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-slate-900/95 via-teal-900/90 to-blue-900/95 backdrop-blur-sm relative border-t border-cyan-400/20">
+      {/* ── Media Gallery ── */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-slate-900/95 via-teal-900/90 to-blue-900/95 backdrop-blur-sm border-t border-cyan-400/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
+          {/* Header */}
+          <div className="text-center mb-10 sm:mb-14 lg:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300 leading-tight">
               Experience the{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">
                 Underwater Magic
               </span>
             </h2>
-
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-teal-100 max-w-4xl mx-auto mb-8 sm:mb-12 drop-shadow-lg leading-relaxed font-light bg-slate-900/20 p-4 sm:p-6 rounded-2xl backdrop-blur-sm border border-teal-400/20">
-              Immerse yourself in the breathtaking beauty of Anilao's marine life
-              through our stunning image gallery and captivating video experiences
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-teal-100 max-w-3xl mx-auto leading-relaxed font-light bg-slate-900/20 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl backdrop-blur-sm border border-teal-400/20">
+              Immerse yourself in the breathtaking beauty of Anilao's marine life through our
+              stunning image gallery and captivating video experiences
             </p>
           </div>
 
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-
-              {/* IMAGE GALLERY */}
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                  <div className="p-2 sm:p-3 bg-secondary/20 rounded-xl border border-secondary/30">
-                    <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-teal-300">
-                      Photo Gallery
-                    </h3>
-                    <p className="text-sm sm:text-base font-bold text-teal-300">
-                      Stunning underwater photography
-                    </p>
-                  </div>
-                </div>
-
-                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20 group hover:shadow-primary/20 transition-all duration-500">
-
-                  <div className="relative h-52 sm:h-64 md:h-80 lg:h-[420px] overflow-hidden">
-                    <img
-                      src={imageItems[currentImageIndex].src || "/placeholder.svg"}
-                      alt={imageItems[currentImageIndex].title}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder.svg"
-                      }}
-                    />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300"
-                    >
-                      <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
-
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-primary/50 transition-all duration-300"
-                    >
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
-
-                    <div className="absolute top-3 sm:top-6 left-3 sm:left-6">
-                      <div className="flex items-center gap-2 bg-primary/90 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full border border-primary/30">
-                        <Camera className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
-                        <span className="text-primary-foreground font-medium text-xs sm:text-sm">
-                          {imageItems[currentImageIndex].badge}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-start lg:justify-center gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-2">
-                      {imageItems.map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`relative overflow-hidden rounded-lg transition-all duration-300 border-2 shrink-0 ${index === currentImageIndex
-                            ? "border-primary scale-105 shadow-lg shadow-primary/30"
-                            : "border-border hover:border-primary/50"
-                            }`}
-                        >
-                          <div className="w-14 sm:w-16 md:w-20 h-10 sm:h-12 relative">
-                            <img
-                              src={item.src || "/placeholder.svg"}
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {index === currentImageIndex && (
-                              <div className="absolute inset-0 bg-primary/20" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-center mt-4 gap-2">
-                      {imageItems.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`h-1 rounded-full transition-all duration-300 ${index === currentImageIndex
-                            ? "w-8 bg-primary"
-                            : "w-2 bg-border"
-                            }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* VIDEO GALLERY */}
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                  <div className="p-2 sm:p-3 bg-secondary/20 rounded-xl border border-secondary/30">
-                    <Video className="h-5 w-5 sm:h-6 sm:w-6 text-secondary" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold text-teal-300">
-                      Video Gallery
-                    </h3>
-
-                    <p className="text-sm sm:text-base font-bold text-teal-300">
-                      {isLoadingVideos
-                        ? "Loading videos..."
-                        : "Immersive diving experiences"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl bg-card border border-border group hover:shadow-secondary/20 transition-all duration-500">
-
-                  <div className="relative h-52 sm:h-64 md:h-80 lg:h-[420px] overflow-hidden">
-                    <video
-                      key={currentVideoIndex}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      controls
-                      className="w-full h-full object-cover"
-                      poster={videoItems[currentVideoIndex].poster ?? undefined}
-                    >
-                      <source
-                        src={videoItems[currentVideoIndex].src}
-                        type="video/mp4"
-                      />
-                    </video>
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent pointer-events-none" />
-
-                    <button
-                      onClick={prevVideo}
-                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300"
-                    >
-                      <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
-
-                    <button
-                      onClick={nextVideo}
-                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-card/80 hover:bg-card backdrop-blur-sm p-2 sm:p-3 rounded-full border border-border hover:border-teal-300/50 transition-all duration-300"
-                    >
-                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </button>
-
-                    <div className="absolute top-3 sm:top-6 left-3 sm:left-6">
-                      <div className="flex items-center gap-2 bg-teal-300/90 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full">
-                        <Video className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="text-xs sm:text-sm font-medium">
-                          {videoItems[currentVideoIndex].badge}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="absolute top-3 sm:top-6 right-3 sm:right-6">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        {videoItems[currentVideoIndex].duration && (
-                          <div className="bg-black/80 px-3 py-1 rounded-full">
-                            <span className="text-teal-300 text-xs sm:text-sm">
-                              {videoItems[currentVideoIndex].duration}
-                            </span>
-                          </div>
-                        )}
-
-                        {videoItems[currentVideoIndex].views > 0 && (
-                          <div className="flex items-center gap-1 bg-black/80 px-3 py-1 rounded-full">
-                            <Eye className="h-3 w-3 text-teal-300" />
-                            <span className="text-teal-300 text-xs sm:text-sm">
-                              {videoItems[currentVideoIndex].views > 1000
-                                ? `${(
-                                  videoItems[currentVideoIndex].views / 1000
-                                ).toFixed(1)}K`
-                                : videoItems[currentVideoIndex].views}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
-                    <div className="flex items-center justify-start lg:justify-center gap-2 sm:gap-3 overflow-x-auto px-1 sm:px-2">
-                      {videoItems.map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentVideoIndex(index)}
-                          className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 shrink-0 ${index === currentVideoIndex
-                            ? "border-teal-300 scale-105 shadow-lg shadow-teal-300/30"
-                            : "border-border hover:border-teal-300/50"
-                            }`}
-                        >
-                          <div className="w-14 sm:w-16 md:w-20 h-10 sm:h-12 relative bg-slate-800 flex items-center justify-center">
-                            {item.poster ? (
-                              <img
-                                src={item.poster}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Video className="h-5 w-5 text-teal-400" />
-                            )}
-
-                            <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                              <Play className="h-3 w-3 text-teal-300" />
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-center mt-4 gap-2">
-                      {videoItems.map((_, index) => (
-                        <div
-                          key={index}
-                          className={`h-1 rounded-full transition-all duration-300 ${index === currentVideoIndex
-                            ? "w-8 bg-teal-300"
-                            : "w-2 bg-border"
-                            }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-            </div>
+          {/* Two-column gallery grid */}
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <ImageGallery items={imageItems} />
+            <VideoGallery items={videoItems} isLoading={isLoadingVideos} />
           </div>
         </div>
       </section>
 
-
-
-      {/* Certifications Section */}
-      <section className="py-24 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm relative border-t border-teal-400/20">
+      {/* ── Certifications ── */}
+      <section className="py-24 bg-gradient-to-b from-teal-900/90 to-blue-900/90 backdrop-blur-sm border-t border-teal-400/20">
         <div className="container mx-auto px-6">
           <div className="text-center mb-20">
             <h2 className="text-3xl lg:text-4xl font-bold text-teal-100 mb-4">
@@ -923,8 +918,8 @@ export default function HomePage() {
           {certificatesLoading ? (
             <div className="flex justify-center items-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-20 w-20 border-4 border-teal-400 border-t-transparent mx-auto mb-6"></div>
-                <p className="text-teal-200 text-lg font-medium">Loading certification courses...</p>
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-teal-400 border-t-transparent mx-auto mb-6" />
+                <p className="text-teal-200 text-lg font-medium">Loading certification courses…</p>
               </div>
             </div>
           ) : certificates.length > 0 ? (
@@ -943,13 +938,19 @@ export default function HomePage() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
                           <div className="absolute top-6 right-7">
-                            <Badge className={`text-xs font-medium ${getLevelColor(course.level)}`}>{course.level}</Badge>
+                            <Badge className={`text-xs font-medium ${getLevelColor(course.level)}`}>
+                              {course.level}
+                            </Badge>
                           </div>
                         </div>
                       )}
                       <CardContent className="p-5">
-                        <h3 className="text-xl font-bold text-teal-100 group-hover:text-teal-300 transition-colors mb-2 leading-tight">{course.name}</h3>
-                        <p className="text-teal-200 text-sm mb-4 leading-relaxed line-clamp-2 group-hover:text-teal-100 transition-colors">{course.description.substring(0, 80)}...</p>
+                        <h3 className="text-xl font-bold text-teal-100 group-hover:text-teal-300 transition-colors mb-2 leading-tight">
+                          {course.name}
+                        </h3>
+                        <p className="text-teal-200 text-sm mb-4 leading-relaxed line-clamp-2 group-hover:text-teal-100 transition-colors">
+                          {course.description.substring(0, 80)}…
+                        </p>
                         <div className="grid grid-cols-2 gap-3 text-xs mb-4">
                           <div className="flex items-center gap-2 p-2 bg-teal-900/50 rounded-lg border border-teal-400/20">
                             <Clock className="h-3 w-3 text-teal-300" />
@@ -967,10 +968,12 @@ export default function HomePage() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between pt-3 border-t border-teal-400/20">
-                          <div className="text-2xl font-bold text-teal-300">₱{Number(course.price).toLocaleString()}</div>
+                          <div className="text-2xl font-bold text-teal-300">
+                            ₱{Number(course.price).toLocaleString()}
+                          </div>
                           <div className="flex items-center gap-1 text-teal-300 group-hover:text-teal-100 transition-colors">
                             <span className="text-sm font-medium">Learn More</span>
-                            <ArrowRight className="ml-3 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                            <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                           </div>
                         </div>
                       </CardContent>
@@ -999,8 +1002,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Dive Sites Section */}
-      <section className="py-24 bg-gradient-to-b from-blue-900/90 to-teal-900/90 backdrop-blur-sm relative border-t border-cyan-400/20">
+      {/* ── Dive Sites ── */}
+      <section className="py-24 bg-gradient-to-b from-blue-900/90 to-teal-900/90 backdrop-blur-sm border-t border-cyan-400/20">
         <div className="container mx-auto px-6">
           <div className="text-center mb-20">
             <h2 className="text-3xl lg:text-4xl font-bold text-teal-100 mb-4">
@@ -1015,14 +1018,13 @@ export default function HomePage() {
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-20 w-20 border-4 border-teal-400 border-t-transparent mx-auto mb-6"></div>
-                <p className="text-teal-200 text-lg font-medium">Discovering amazing dive sites...</p>
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-teal-400 border-t-transparent mx-auto mb-6" />
+                <p className="text-teal-200 text-lg font-medium">Discovering amazing dive sites…</p>
               </div>
             </div>
           ) : error ? (
             <div className="text-center py-20">
               <div className="bg-gradient-to-br from-red-900/80 to-red-800/80 border-2 border-red-400/30 rounded-2xl p-10 max-w-md mx-auto shadow-2xl backdrop-blur-sm">
-                <div className="text-red-400 text-5xl mb-4">⚠️</div>
                 <p className="text-red-200 mb-6 text-lg font-medium">{error}</p>
                 <Button onClick={() => window.location.reload()} variant="outline" className="border-red-400/50 text-red-200 hover:bg-red-400/20 px-6 py-3 rounded-full backdrop-blur-sm">
                   Try Again
@@ -1050,7 +1052,7 @@ export default function HomePage() {
                           <Waves className="h-3 w-3 text-teal-300" />
                           <div>
                             <div className="text-teal-300 font-medium">Depth</div>
-                            <div className="text-teal-100 font-bold">{site.depth_min}-{site.depth_max}m</div>
+                            <div className="text-teal-100 font-bold">{site.depth_min}–{site.depth_max}m</div>
                           </div>
                         </div>
                         {site.visibility && (
@@ -1102,8 +1104,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-24 bg-gradient-to-b from-teal-900/90 to-slate-900/90 backdrop-blur-sm relative border-t border-cyan-400/20">
+      {/* ── Testimonials ── */}
+      <section className="py-24 bg-gradient-to-b from-teal-900/90 to-slate-900/90 backdrop-blur-sm border-t border-cyan-400/20">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-teal-100 mb-4">
@@ -1115,7 +1117,7 @@ export default function HomePage() {
             </p>
           </div>
           <TestimonialsDisplay />
-          <div className="text-center mt-16">
+          <div className="text-center mt  -16">
             <h3 className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 mb-6">
               Share Your{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">Diving Story</span>
@@ -1128,65 +1130,87 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-900 via-teal-900 to-blue-900 relative overflow-hidden border-t border-teal-400/20">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute bottom-10 right-10 w-40 h-40 bg-cyan-400/20 rounded-full blur-xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-blue-400/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+      {/* ── Newsletter ── */}
+      <section className="py-20 bg-gradient-to-br from-slate-900 via-teal-900 to-blue-900 border-t border-teal-400/20 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-xl animate-pulse" />
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-cyan-400/20 rounded-full blur-xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-blue-400/10 rounded-full blur-2xl animate-pulse delay-500" />
         </div>
+
         <div className="container mx-auto px-6 text-center relative z-10">
-          <div className="max-w-4xl mx-auto bg-gradient-to-br from-slate-800/60 to-blue-900/60 backdrop-blur-sm rounded-3xl p-12 border border-teal-400/30 shadow-2xl">
-            <div className="flex items-center justify-center mb-8">
-              <div className="p-4 bg-gradient-to-br from-teal-600/30 to-cyan-600/30 rounded-2xl border border-teal-400/40">
-                <Waves className="h-12 w-12 text-teal-300" />
-              </div>
+          <div className="flex items-center justify-center mb-8">
+            <div className="p-4 bg-gradient-to-br from-teal-600/30 to-cyan-600/30 rounded-2xl border border-teal-400/40">
+              <Waves className="h-12 w-12 text-teal-300" />
             </div>
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 mb-4 sm:mb-6 px-4">
-              Dive Into Our Updates
-            </h3>
-            <p className="text-teal-100 mb-8 sm:mb-10 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed px-4">
-              Get the latest dive tips, special offers, and underwater photography straight to your inbox. Join our community of ocean explorers!
-            </p>
-            <form onSubmit={handleNewsletterSubscription} className="flex flex-col gap-4 justify-center max-w-lg mx-auto mb-6 px-4">
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isSubscribing}
-                className="w-full px-6 sm:px-8 py-3 sm:py-4 rounded-full border-2 border-teal-400/30 focus:outline-none focus:ring-4 focus:ring-teal-400/30 focus:border-teal-400 text-slate-900 text-base sm:text-lg shadow-lg bg-white/95 backdrop-blur-sm placeholder-slate-500 disabled:opacity-50"
-                required
-              />
-              <Button
-                type="submit"
-                disabled={isSubscribing}
-                size="lg"
-                className="w-full bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:via-cyan-700 hover:to-blue-700 text-white px-8 sm:px-12 py-4 sm:py-6 rounded-2xl font-bold text-base sm:text-lg shadow-2xl hover:shadow-teal-600/50 transition-all duration-300 group transform hover:scale-105 border border-teal-400/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isSubscribing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-white border-t-transparent mr-3"></div>
-                    Joining...
-                  </>
-                ) : (
-                  <>
-                    <Waves className="mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
-                    Subscribe
-                    <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-2 transition-transform" />
-                  </>
-                )}
-              </Button>
-            </form>
-            {subscriptionMessage && (
-              <div className={`mb-6 p-4 rounded-full text-center font-medium ${subscriptionMessage.includes("Thank you") ? "bg-green-900/50 text-green-200 border border-green-400/30" : "bg-red-900/50 text-red-200 border border-red-400/30"}`}>
-                {subscriptionMessage}
-              </div>
-            )}
-            <div className="flex items-center justify-center gap-6 text-teal-300 text-sm">
-              <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span>5,000+ diving enthusiasts</span></div>
-              <div className="flex items-center gap-2"><Star className="h-4 w-4 fill-teal-300" /><span>Weekly dive tips</span></div>
-              <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /><span>Exclusive offers</span></div>
+          </div>
+          <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-300 mb-4 sm:mb-6 px-4">
+            Dive Into Our Updates
+          </h3>
+          <p className="text-teal-100 mb-8 sm:mb-10 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed px-4">
+            Get the latest dive tips, special offers, and underwater photography straight to your inbox.
+            Join our community of ocean explorers!
+          </p>
+
+          <form
+            onSubmit={handleNewsletterSubscription}
+            className="flex flex-col gap-4 justify-center max-w-lg mx-auto mb-6 px-4"
+          >
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubscribing}
+              required
+              className="w-full px-6 sm:px-8 py-3 sm:py-4 rounded-full border-2 border-teal-400/30 focus:outline-none focus:ring-4 focus:ring-teal-400/30 focus:border-teal-400 text-slate-900 text-base sm:text-lg shadow-lg bg-white/95 backdrop-blur-sm placeholder-slate-500 disabled:opacity-50"
+            />
+            <Button
+              type="submit"
+              disabled={isSubscribing}
+              size="lg"
+              className="w-full bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:via-cyan-700 hover:to-blue-700 text-white px-8 sm:px-12 py-4 sm:py-6 rounded-2xl font-bold text-base sm:text-lg shadow-2xl hover:shadow-teal-600/50 transition-all duration-300 group transform hover:scale-105 border border-teal-400/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isSubscribing ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-white border-t-transparent mr-3" />
+                  Joining…
+                </>
+              ) : (
+                <>
+                  <Waves className="mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform" />
+                  Subscribe
+                  <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-2 transition-transform" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          {subscriptionMessage && (
+            <div
+              className={[
+                "mb-6 p-4 rounded-full text-center font-medium",
+                subscriptionMessage.includes("Thank you")
+                  ? "bg-green-900/50 text-green-200 border border-green-400/30"
+                  : "bg-red-900/50 text-red-200 border border-red-400/30",
+              ].join(" ")}
+            >
+              {subscriptionMessage}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-teal-300 text-sm">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>5,000+ diving enthusiasts</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4 fill-teal-300" />
+              <span>Weekly dive tips</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              <span>Exclusive offers</span>
             </div>
           </div>
         </div>

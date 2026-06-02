@@ -917,30 +917,33 @@ const VideoBlogPage = () => {
       <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
 
         {/* Hero */}
-        <div className="text-center mb-20 relative">
-          <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent mb-8 animate-pulse">
-            Diving Gallery
-          </h1>
-          <p className="text-2xl text-slate-700 leading-relaxed font-medium max-w-4xl mx-auto mb-12">
-            Dive into the depths of the ocean through breathtaking videos and stunning underwater photography
-          </p>
+        <div className="text-center mb-10 relative">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-cyan-800 mb-4">
+              Diving Gallery
+            </h2>
+            <p className="text-lg text-cyan-700 mb-2">
+              Dive into the depths of the ocean through breathtaking videos and stunning underwater photography
+            </p>
+          </div>
           <div className="flex flex-wrap justify-center gap-6">
             {[
               { icon: Fish, label: "Marine Life", color: "text-cyan-500" },
               { icon: Camera, label: "Photography", color: "text-blue-500" },
               { icon: Anchor, label: "Adventures", color: "text-indigo-500" },
             ].map(({ icon: Icon, label, color }) => (
-              <div key={label} className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <Icon className={`w-6 h-6 ${color} animate-bounce`} />
-                <span className="text-lg font-semibold text-slate-700">{label}</span>
+              <div key={label} className="flex items-center gap-3 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <Icon className={`w-4 h-4 ${color} animate-bounce`} />
+                <span className="text-sm font-semibold text-slate-700">{label}</span>
               </div>
             ))}
           </div>
         </div>
 
+
         {/* Featured */}
         {featuredVideos.length > 0 && (
-          <div className="mb-20">
+          <div className="mb-12">
             <div className="flex items-center justify-center mb-12">
               <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm px-8 py-4 rounded-full shadow-xl">
                 <div className="w-3 h-10 bg-gradient-to-b from-cyan-400 to-blue-600 rounded-full animate-pulse" />
@@ -1010,41 +1013,58 @@ const VideoBlogPage = () => {
 
         {/* Search + Categories */}
         <div className="mb-16">
-          <div className="relative mb-12">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 w-6 h-6" />
+          {/* Search */}
+          <div className="relative mb-5">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
             <Input
-              placeholder="Search the depths..."
+              placeholder="Search videos, photos, articles…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-16 h-16 border-0 bg-white/90 backdrop-blur-sm text-xl rounded-2xl shadow-xl"
+              className="pl-10 pr-10 h-11 border border-slate-200 bg-white text-sm rounded-xl shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 placeholder:text-slate-400"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4">
+
+          {/* Category chips */}
+          <div className="flex flex-wrap gap-2">
             {categories.map((category) => {
               const icons: Record<string, any> = {
-                all: Waves, "scuba-diving": Anchor, freediving: Fish,
-                "underwater-photography": Camera, "marine-life": Fish,
-                "dive-sites": Anchor, "diving-equipment": Anchor,
-                "diving-safety": Heart, "diving-courses": Anchor,
+                all: Waves,
+                "scuba-diving": Anchor,
+                freediving: Fish,
+                "underwater-photography": Camera,
+                "marine-life": Fish,
+                "dive-sites": Anchor,
+                "diving-equipment": Anchor,
+                "diving-safety": Heart,
+                "diving-courses": Anchor,
               }
               const IconComponent = icons[category.key] || Waves
               const active = selectedCategory === category.key
               return (
-                <Button
+                <button
                   key={category.key}
-                  variant={active ? "default" : "outline"}
                   onClick={() => setSelectedCategory(category.key as CategoryFilter)}
-                  className={`flex flex-col items-center gap-3 h-auto py-6 px-4 rounded-2xl transition-all duration-300 ${active
-                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-xl scale-105 border-0"
-                    : "bg-white/90 hover:bg-white text-slate-700 border-0 hover:shadow-lg hover:scale-105 backdrop-blur-sm"
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm border transition-all duration-150 whitespace-nowrap ${active
+                      ? "bg-cyan-700 border-cyan-700 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-800"
                     }`}
                 >
-                  <IconComponent className={`w-6 h-6 ${active ? "animate-bounce" : ""}`} />
-                  <span className="text-sm font-semibold text-center leading-tight">{category.label}</span>
-                  <Badge className={`text-xs font-medium rounded-full px-2 py-1 ${active ? "bg-white/30 text-white" : "bg-slate-100 text-slate-600"}`}>
+                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                  {category.label}
+                  <span className={`text-xs ${active ? "text-cyan-200" : "text-slate-400"}`}>
                     {category.count}
-                  </Badge>
-                </Button>
+                  </span>
+                </button>
               )
             })}
           </div>
