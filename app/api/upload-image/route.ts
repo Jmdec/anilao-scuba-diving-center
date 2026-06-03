@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
 
-        const response = await fetch(`${BACKEND_URL}/api/upload-image`, {
+        const response = await fetch(`${BACKEND_URL}/upload-image`, {
             method: "POST",
             headers: { "Accept": "application/json" },
             body: formData,
