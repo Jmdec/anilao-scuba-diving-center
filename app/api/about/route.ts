@@ -1,42 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
-const aboutFilePath = path.join(process.cwd(), "data", "about.json");
-
-async function readAboutData() {
-    try {
-        const raw = await fs.readFile(aboutFilePath, "utf-8");
-        return JSON.parse(raw);
-    } catch (error: any) {
-        if (error.code === "ENOENT") return {};
-        console.error("Failed to read about data:", error);
-        return {};
-    }
-}
-
-async function writeAboutData(data: unknown) {
-    try {
-        await fs.mkdir(path.dirname(aboutFilePath), { recursive: true });
-        await fs.writeFile(
-            aboutFilePath,
-            JSON.stringify(data, null, 2),
-            "utf-8"
-        );
-        return true;
-    } catch (error) {
-        console.error("Failed to write about data:", error);
-        return false;
-    }
-}
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
 export async function GET() {
-    const data = await readAboutData();
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/about`, {
+            cache: "no-store",
+        });
 
-    return NextResponse.json({
-        success: true,
-        data,
-    });
+        if (!response.ok) {
+            return NextResponse.json(
+                { success: false, message: "Backend returned an error" },
+                { status: response.status }
+            );
+        }
+
+        const data = await response.json();
+
+        // Backend returns { success, data: { ... } } or { success, data: null }
+        if (!data.success) {
+            return NextResponse.json(
+                { success: false, message: "Backend reported failure" },
+                { status: 500 }
+            );
+        }
+
+        // Handle null (no about page created yet)
+        if (!data.data) {
+            return NextResponse.json({
+                success: true,
+                data: {
+                    title: "About Us",
+                    slug: "about-us",
+                    stories: [],
+                    values: [],
+                    teamMembers: [],
+                    storyImages: [],
+                },
+            });
+        }
+
+        const raw = data.data;
+
+        // Field names are confirmed from the Laravel controller.
+        // Just guard each array in case Eloquent returns null.
+        const normalized = {
+            title:       raw.title                                          ?? "About Us",
+            slug:        raw.slug                                           ?? "about-us",
+            stories:     Array.isArray(raw.stories)     ? raw.stories      : [],
+            values:      Array.isArray(raw.values)      ? raw.values       : [],
+            teamMembers: Array.isArray(raw.teamMembers) ? raw.teamMembers  : [],
+            storyImages: Array.isArray(raw.storyImages) ? raw.storyImages  : [],
+        };
+
+        return NextResponse.json({ success: true, data: normalized });
+    } catch (error) {
+        console.error("[about/route] GET failed:", error);
+        return NextResponse.json(
+            { success: false, message: "Failed to load about data" },
+            { status: 500 }
+        );
+    }
 }
 
 export async function POST(request: NextRequest) {
@@ -50,23 +74,29 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const saved = await writeAboutData(payload);
+        const response = await fetch(`${BACKEND_URL}/api/about`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
 
-        if (!saved) {
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
             return NextResponse.json(
-                { success: false, message: "Could not save about content" },
-                { status: 500 }
+                {
+                    success: false,
+                    message: data.message || "Failed to save",
+                    // Surface Laravel validation errors if present
+                    errors: data.errors ?? undefined,
+                },
+                { status: response.status }
             );
         }
 
-        return NextResponse.json({
-            success: true,
-            message: "About content updated",
-            data: payload,
-        });
+        return NextResponse.json(data);
     } catch (error) {
-        console.error("About save error:", error);
-
+        console.error("[about/route] POST failed:", error);
         return NextResponse.json(
             { success: false, message: "Internal server error" },
             { status: 500 }
