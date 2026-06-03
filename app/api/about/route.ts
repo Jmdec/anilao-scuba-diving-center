@@ -7,15 +7,15 @@ const BACKEND_URL =
 const PUBLIC_IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_API_URL;
 
 function rewriteImageUrl(url: unknown): string {
-  if (typeof url !== "string" || !PUBLIC_IMAGE_BASE) return url as string;
+  if (typeof url !== "string") return "";
+  if (!PUBLIC_IMAGE_BASE) return url;
   try {
     const parsed = new URL(url);
     return `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${parsed.pathname}`;
   } catch {
-    if (url.startsWith("/")) {
-      return `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${url}`;
-    }
-    return url;
+    return url.startsWith("/")
+      ? `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${url}`
+      : url;
   }
 }
 
