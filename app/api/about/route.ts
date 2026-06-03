@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "h
 
 export async function GET() {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/about`, {
+        const response = await fetch(`${BACKEND_URL}/about`, {
             cache: "no-store",
         });
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const response = await fetch(`${BACKEND_URL}/api/about`, {
+        const response = await fetch(`${BACKEND_URL}/about`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
