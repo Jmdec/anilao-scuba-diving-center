@@ -92,9 +92,14 @@ function rewriteImageUrl(url: string): string {
   if (!IMAGE_BASE) return url;
   try {
     const parsed = new URL(url);
-    return `${IMAGE_BASE.replace(/\/$/, "")}${parsed.pathname}`;
+    // Strip leading /api from the pathname
+    const pathname = parsed.pathname.replace(/^\/api/, "");
+    return `${IMAGE_BASE.replace(/\/$/, "")}${pathname}`;
   } catch {
-    return url.startsWith("/") ? `${IMAGE_BASE.replace(/\/$/, "")}${url}` : url;
+    const pathname = url.startsWith("/") ? url.replace(/^\/api/, "") : url;
+    return url.startsWith("/")
+      ? `${IMAGE_BASE.replace(/\/$/, "")}${pathname}`
+      : url;
   }
 }
 

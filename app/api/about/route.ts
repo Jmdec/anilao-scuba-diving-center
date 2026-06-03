@@ -6,15 +6,16 @@ const BACKEND_URL =
   "http://127.0.0.1:8000";
 const PUBLIC_IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_API_URL;
 
-function rewriteImageUrl(url: unknown): string {
-  if (typeof url !== "string") return "";
+function rewriteImageUrl(url: string): string {
   if (!PUBLIC_IMAGE_BASE) return url;
   try {
     const parsed = new URL(url);
-    return `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${parsed.pathname}`;
+    const pathname = parsed.pathname.replace(/^\/api/, "");
+    return `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${pathname}`;
   } catch {
+    const pathname = url.startsWith("/") ? url.replace(/^\/api/, "") : url;
     return url.startsWith("/")
-      ? `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${url}`
+      ? `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${pathname}`
       : url;
   }
 }
