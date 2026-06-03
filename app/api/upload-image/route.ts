@@ -4,7 +4,7 @@ const BACKEND_URL =
   process.env.API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://127.0.0.1:8000";
-const PUBLIC_IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_API_URL || BACKEND_URL;
+const PUBLIC_IMAGE_BASE = process.env.NEXT_PUBLIC_IMAGE_API_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,8 +45,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (typeof data.url === "string" && data.url.startsWith("/")) {
-      data.url = `${PUBLIC_IMAGE_BASE}${data.url}`;
+    // Rewrite image URL to use NEXT_PUBLIC_IMAGE_API_URL as base
+    const rawUrl = data.url;
+    if (typeof rawUrl === "string" && PUBLIC_IMAGE_BASE) {
+      try {
+        const parsed = new URL(rawUrl);
+        data.url = `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${parsed.pathname}`;
+      } catch {
+        if (rawUrl.startsWith("/")) {
+          data.url = `${PUBLIC_IMAGE_BASE.replace(/\/$/, "")}${rawUrl}`;
+        }
+      }
     }
 
     return NextResponse.json(data);
